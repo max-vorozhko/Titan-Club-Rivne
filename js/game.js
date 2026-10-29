@@ -35,7 +35,7 @@
       this.ui = ui;
       this.W = 800;
       this.running = false;
-      this.colors = { brand: css("--brand"), accent: css("--accent") };
+      this.colors = { brand: css("--brand"), ink: css("--ink"), accent: css("--accent") };
       this.reset();
       this.resize();
       window.addEventListener("resize", () => this.resize());
@@ -423,32 +423,33 @@
         c.fill();
       }
 
+      // Силует у стилі логотипу: помаранчеві торс і голова, графітові кінцівки
+      const { brand, ink } = this.colors;
       c.lineCap = "round";
       c.lineWidth = 7;
-      // Задні кінцівки
-      c.strokeStyle = "#1d1d22";
+      // Задні кінцівки (трохи світліші, щоб читалась глибина)
+      c.globalAlpha = 0.75;
+      c.strokeStyle = ink;
       limb(c, x, hip, -s, 14, 15);
       limb(c, x, shoulder + 4, s, 12, 11);
-      // Тулуб у клубній футболці
-      c.strokeStyle = this.colors.brand;
-      c.lineWidth = 12;
+      c.globalAlpha = 1;
+      // Тулуб
+      c.strokeStyle = brand;
+      c.lineWidth = 13;
       c.beginPath();
       c.moveTo(x, hip);
       c.lineTo(x + 3, shoulder);
       c.stroke();
       // Передні кінцівки
       c.lineWidth = 7;
-      c.strokeStyle = "#2c2c33";
+      c.strokeStyle = ink;
       limb(c, x, hip, s, 14, 15);
-      c.strokeStyle = "#f1c27d";
       limb(c, x + 2, shoulder + 4, -s, 12, 11);
-      // Голова й пов'язка
-      c.fillStyle = "#f1c27d";
+      // Голова
+      c.fillStyle = brand;
       c.beginPath();
       c.arc(x + 5, shoulder - 11, 9, 0, Math.PI * 2);
       c.fill();
-      c.fillStyle = this.colors.accent;
-      c.fillRect(x - 4, shoulder - 17, 18, 4);
     }
   }
 
