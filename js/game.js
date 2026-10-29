@@ -68,6 +68,7 @@
       this.nextObstacle = 1.2;
       this.nextPickup = 2.5;
       this.milestone = 0;
+      this.lowWarned = false;
       this.time = 0;
     }
 
@@ -149,6 +150,14 @@
         this.burst(p.x, p.y - 40, this.colors.accent, 24);
       }
 
+      // Одне попередження, коли енергії мало; знову спрацює після того, як попили води
+      if (this.energy < 25 && !this.lowWarned) {
+        this.ui.toast("💧 Мало енергії, пий воду!");
+        this.lowWarned = true;
+      } else if (this.energy > 40) {
+        this.lowWarned = false;
+      }
+
       this.ui.hud(this.km, this.energy, this.coins);
       if (this.energy <= 0) this.over("Енергія закінчилась 🥵");
     }
@@ -226,7 +235,7 @@
       this.burst(this.player.x, this.player.y - 30, this.colors.brand, 30);
       this.draw(0);
       const reached = MILESTONES.slice(0, this.milestone).pop();
-      this.ui.over({ km: this.km, coins: this.coins, reason, mark: reached ? reached.label.replace(/[!—].*$/, "").trim() : "—" });
+      this.ui.over({ km: this.km, coins: this.coins, time: this.time, reason, mark: reached ? reached.label.replace(/[!—].*$/, "").trim() : "—" });
     }
 
     burst(x, y, color, n) {
