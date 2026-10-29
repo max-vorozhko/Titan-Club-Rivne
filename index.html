@@ -65,32 +65,25 @@
 
     <!-- БОНУСИ -->
     <section id="tab-rewards" class="tab">
-      <div class="panel">
+      <div class="panel is-wip">
+        <span class="badge">🚧 В розробці</span>
         <h2>Недільні пробіжки</h2>
-        <p class="muted">Відмічайся на кожній недільній пробіжці клубу й отримуй подарунки від Titan Club.</p>
-
-        <div class="visits">
-          <div class="visits__count"><span id="visits-count">0</span><small>пробіжок</small></div>
-          <div class="visits__next" id="visits-next"></div>
-        </div>
+        <p class="muted">Скоро тут можна буде відмічатися на недільних пробіжках клубу й отримувати подарунки від Titan Club.</p>
 
         <div class="track" id="reward-track"></div>
 
-        <button class="btn btn--primary btn--wide" id="btn-checkin">Я на пробіжці!</button>
-        <p class="muted small" id="checkin-hint"></p>
-
-        <h3>Історія</h3>
-        <ul class="history" id="visits-history"></ul>
+        <button class="btn btn--primary btn--wide" disabled>Скоро</button>
       </div>
     </section>
   </main>
 
   <footer class="footer">
     <a href="https://www.instagram.com/titan.club.rivne" target="_blank" rel="noopener">@titan.club.rivne</a>
+    <span class="footer__sep">·</span>
+    <span class="footer__credit">Powered by Max Vorozhko</span>
   </footer>
 
   <script src="js/rewards.js"></script>
-  <script src="js/attendance.js"></script>
   <script src="js/game.js"></script>
   <script src="js/app.js"></script>
 </body>

@@ -98,68 +98,15 @@
   });
 
   // ---------- Бонуси ----------
-  function plural(n) {
-    const m10 = n % 10;
-    const m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return "пробіжка";
-    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return "пробіжки";
-    return "пробіжок";
-  }
-
+  // Облік пробіжок ще в розробці, тому показуємо лише рівні програми (js/attendance.js поки не підключено).
   function renderRewards() {
-    const visits = Attendance.count();
-    const next = nextReward(visits);
-    $("visits-count").textContent = visits;
-    $("visits-count").nextElementSibling.textContent = plural(visits);
-
-    if (next) {
-      const left = next.runs - visits;
-      $("visits-next").textContent = `До подарунка «${next.name}» ${next.icon} ще ${left} ${plural(left)}`;
-    } else {
-      $("visits-next").textContent = "Усі подарунки зібрано! Ти справжній Титан 🏆";
-    }
-
-    let prev = 0;
-    $("reward-track").innerHTML = REWARDS.map((r) => {
-      const progress = Math.max(0, Math.min(1, (visits - prev) / (r.runs - prev)));
-      prev = r.runs;
-      const cls = visits >= r.runs ? "is-done" : r === next ? "is-next" : "";
-      return `
-        <div class="reward ${cls}">
-          <div class="reward__icon">${r.icon}</div>
-          <div>
-            <div class="reward__name">${r.name}</div>
-            <div class="reward__bar"><i style="width:${progress * 100}%"></i></div>
-          </div>
-          <div class="reward__goal">${visits >= r.runs ? "✓" : r.runs}</div>
-        </div>`;
-    }).join("");
-
-    const btn = $("btn-checkin");
-    if (Attendance.checkedInToday()) {
-      btn.disabled = true;
-      $("checkin-hint").textContent = "Сьогодні ти вже відмітився. До наступної неділі!";
-    } else if (!Attendance.isRunDay()) {
-      btn.disabled = true;
-      $("checkin-hint").textContent = "Відмітитися можна в неділю, у день клубної пробіжки.";
-    } else {
-      btn.disabled = false;
-      $("checkin-hint").textContent = "";
-    }
-
-    const history = Attendance.list().slice().reverse();
-    $("visits-history").innerHTML = history.length
-      ? history.map((d) => `<li>🏃 ${new Date(d).toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" })}</li>`).join("")
-      : "<li>Поки що порожньо. Чекаємо на тебе в неділю!</li>";
+    $("reward-track").innerHTML = REWARDS.map((r) => `
+      <div class="reward">
+        <div class="reward__icon">${r.icon}</div>
+        <div class="reward__name">${r.name}</div>
+        <div class="reward__goal">${r.runs} пробіжок</div>
+      </div>`).join("");
   }
-
-  $("btn-checkin").addEventListener("click", () => {
-    const before = Attendance.count();
-    if (!Attendance.checkIn()) return;
-    const earned = REWARDS.find((r) => before < r.runs && Attendance.count() >= r.runs);
-    renderRewards();
-    if (earned) alert(`Вітаємо! Ти заробив(-ла): ${earned.name} ${earned.icon}. Покажи цей екран тренеру.`);
-  });
 
   renderRewards();
 })();
