@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
   <header class="topbar">
@@ -71,10 +71,17 @@
             <button class="btn btn--primary" id="btn-restart">Ще забіг</button>
             <button class="btn btn--ghost" id="btn-share">Поділитись</button>
           </div>
-          <div class="share-fallback" id="share-fallback" hidden>
-            <a class="btn btn--small" id="share-tg" target="_blank" rel="noopener">Надіслати в Telegram</a>
-            <textarea class="share-fallback__text" id="share-text" readonly rows="2" aria-label="Текст для копіювання"></textarea>
-            <small class="muted">або виділи текст і скопіюй вручну</small>
+          <div class="share-sheet" id="share-sheet" hidden>
+            <div class="share-sheet__grid">
+              <a class="share-btn share-btn--tg" id="share-telegram" target="_blank" rel="noopener">Telegram</a>
+              <a class="share-btn share-btn--viber" id="share-viber">Viber</a>
+              <a class="share-btn share-btn--wa" id="share-whatsapp" target="_blank" rel="noopener">WhatsApp</a>
+              <a class="share-btn share-btn--fb" id="share-facebook" target="_blank" rel="noopener">Facebook</a>
+              <a class="share-btn share-btn--x" id="share-x" target="_blank" rel="noopener">X</a>
+              <button class="share-btn share-btn--ig" id="share-story" type="button">Instagram сторіс</button>
+              <button class="share-btn" id="share-copy" type="button">Копіювати</button>
+              <button class="share-btn" id="share-more" type="button" hidden>Ще…</button>
+            </div>
           </div>
         </div>
       </div>
@@ -112,10 +119,11 @@
     <span class="footer__credit">Powered by Max Vorozhko</span>
   </footer>
 
-  <script src="js/config.js?v=4"></script>
-  <script src="js/leaderboard.js?v=4"></script>
-  <script src="js/rewards.js?v=4"></script>
-  <script src="js/game.js?v=4"></script>
-  <script src="js/app.js?v=4"></script>
+  <script src="js/config.js?v=5"></script>
+  <script src="js/leaderboard.js?v=5"></script>
+  <script src="js/share.js?v=5"></script>
+  <script src="js/rewards.js?v=5"></script>
+  <script src="js/game.js?v=5"></script>
+  <script src="js/app.js?v=5"></script>
 </body>
 </html>
