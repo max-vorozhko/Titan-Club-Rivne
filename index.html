@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#ffffff">
+  <title>Titan Run — Titan Club Rivne</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <img src="assets/logo.png" alt="Titan Club Rivne" class="topbar__logo">
+    <nav class="tabs" role="tablist">
+      <button class="tabs__btn is-active" data-tab="game" role="tab">Гра</button>
+      <button class="tabs__btn" data-tab="rewards" role="tab">Бонуси</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ГРА -->
+    <section id="tab-game" class="tab is-active">
+      <div class="game">
+        <canvas id="game-canvas"></canvas>
+
+        <div class="hud" id="hud" hidden>
+          <div class="hud__dist"><span id="hud-km">0.00</span> км</div>
+          <div class="hud__energy"><div class="hud__energy-fill" id="hud-energy"></div></div>
+          <div class="hud__coins">🪙 <span id="hud-coins">0</span></div>
+        </div>
+        <div class="toast" id="toast"></div>
+
+        <div class="overlay" id="screen-start">
+          <img src="assets/logo.png" alt="" class="overlay__logo">
+          <h1>TITAN <span>RUN</span></h1>
+          <p class="overlay__lead">Біжи вулицями Рівного, перестрибуй перешкоди, пий воду й добігай до марафону!</p>
+          <ul class="howto">
+            <li><b>Тап / Пробіл</b> — стрибок (у повітрі можна ще раз)</li>
+            <li>💧 вода — відновлює енергію</li>
+            <li>⚡ гель — прискорення й невразливість</li>
+            <li>🪙 титан-монети — для рекорду</li>
+          </ul>
+          <button class="btn btn--primary" id="btn-start">Старт!</button>
+          <p class="overlay__best">Рекорд: <span id="best-start">0.00</span> км</p>
+        </div>
+
+        <div class="overlay" id="screen-over" hidden>
+          <h2 id="over-title">Фініш!</h2>
+          <div class="result">
+            <div><span class="result__val" id="over-km">0.00</span><span class="result__lbl">км</span></div>
+            <div><span class="result__val" id="over-coins">0</span><span class="result__lbl">монет</span></div>
+            <div><span class="result__val" id="over-pace">—</span><span class="result__lbl">мітка</span></div>
+          </div>
+          <p class="overlay__best">Рекорд: <span id="best-over">0.00</span> км</p>
+          <div class="overlay__actions">
+            <button class="btn btn--primary" id="btn-restart">Ще забіг</button>
+            <button class="btn btn--ghost" id="btn-share">Поділитись</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- БОНУСИ -->
+    <section id="tab-rewards" class="tab">
+      <div class="panel is-wip">
+        <span class="badge">🚧 В розробці</span>
+        <h2>Недільні пробіжки</h2>
+        <p class="muted">Скоро тут можна буде відмічатися на недільних пробіжках клубу й отримувати подарунки від Titan Club.</p>
+
+        <div class="track" id="reward-track"></div>
+
+        <button class="btn btn--primary btn--wide" disabled>Скоро</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <a href="https://www.instagram.com/titan.club.rivne" target="_blank" rel="noopener">@titan.club.rivne</a>
+    <span class="footer__sep">·</span>
+    <span class="footer__credit">Powered by Max Vorozhko</span>
+  </footer>
+
+  <script src="js/rewards.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
