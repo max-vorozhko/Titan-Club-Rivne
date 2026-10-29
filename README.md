@@ -11,6 +11,11 @@ python3 -m http.server 8000
 # відкрити http://localhost:8000
 ```
 
+## Публікація
+
+Сайт публікується через GitHub Pages з гілки `main` (корінь репозиторію):
+https://max-vorozhko.github.io/Titan-Club-Rivne/
+
 ## Гра «Titan Run»
 
 - **Тап / Пробіл / ↑**: стрибок, у повітрі можна ще раз (подвійний стрибок).
