@@ -82,6 +82,7 @@ main { flex: 1; display: flex; min-height: 0; }
   text-transform: uppercase; padding: 8px 20px;
   border-radius: 999px; opacity: 0; transition: opacity .25s, transform .25s;
   pointer-events: none; white-space: nowrap;
+  z-index: 10; /* поверх екранів старту й результату */
 }
 .toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
 
@@ -172,3 +173,16 @@ main { flex: 1; display: flex; min-height: 0; }
 .leaders__coins { font-size: 13px; color: var(--muted); }
 .leaders__km { font: 700 20px var(--font-display); color: var(--brand); }
 .leaders__empty { padding: 20px; text-align: center; color: var(--muted); background: var(--surface); border-radius: var(--radius); }
+
+/* Запасний спосіб поділитись (вбудовані браузери без Web Share і буфера обміну) */
+.share-fallback { display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(360px, 100%); }
+.share-fallback .btn { text-decoration: none; }
+.share-fallback__text {
+  width: 100%; resize: none; padding: 8px 12px; border-radius: 12px; border: 2px solid var(--surface-2);
+  font: 500 13px var(--font); color: var(--ink); background: #fff;
+}
+
+/* Ім'я на стартовому екрані */
+.start-name { width: min(320px, 100%); display: flex; }
+.start-name .lb-form__input { text-align: center; }
+.start-who { margin: 0; font-size: 14px; }

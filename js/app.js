@@ -68,7 +68,35 @@
   const game = new TitanGame($("game-canvas"), ui);
   $("best-start").textContent = getBest().toFixed(2);
 
+  // Ім'я для рейтингу можна ввести ще до забігу
+  function renderStartName() {
+    const name = Leaderboard.enabled ? Leaderboard.getName() : "";
+    $("start-name").hidden = !Leaderboard.enabled || !!name;
+    $("start-who").hidden = !name;
+    if (name) {
+      $("start-who").innerHTML = `Граєш як <b>${escapeHtml(name)}</b> · <button class="link" id="start-rename" type="button">змінити</button>`;
+    }
+  }
+
+  $("start-who").addEventListener("click", (e) => {
+    if (e.target.id !== "start-rename") return;
+    $("start-name-input").value = Leaderboard.getName();
+    $("start-who").hidden = true;
+    $("start-name").hidden = false;
+    $("start-name-input").focus();
+  });
+
+  $("start-name-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") start();
+  });
+
   function start() {
+    const typed = $("start-name-input").value.trim();
+    if (!$("start-name").hidden && typed.length >= 2) {
+      Leaderboard.setName(typed);
+      renderStartName();
+    }
+    $("share-fallback").hidden = true;
     $("screen-start").hidden = true;
     $("screen-over").hidden = true;
     $("hud").hidden = false;
@@ -92,16 +120,48 @@
     else if (!$("screen-start").hidden || !$("screen-over").hidden) start();
   });
 
+  // Копіювання з запасним способом для WebView, де Clipboard API заборонено
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {}
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } catch (e) {}
+    ta.remove();
+    return ok;
+  }
+
+  // Системне меню → копіювання → панель з Telegram і текстом для ручного копіювання
   $("btn-share").addEventListener("click", async () => {
     if (!lastResult) return;
-    const text = `Я пробіг ${lastResult.km.toFixed(2)} км у грі Titan Run від @titan.club.rivne 🏃‍♂️ А ти?`;
-    try {
-      if (navigator.share) await navigator.share({ title: "Titan Run", text, url: location.href });
-      else {
-        await navigator.clipboard.writeText(`${text} ${location.href}`);
-        ui.toast("Скопійовано!");
+    const url = location.href.split("#")[0];
+    const text = `Мій результат у грі Titan Run від @titan.club.rivne: ${lastResult.km.toFixed(2)} км 🏃 А ти?`;
+    $("share-fallback").hidden = true;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Titan Run", text, url });
+        return;
+      } catch (e) {
+        if (e.name === "AbortError") return; // користувач сам закрив меню
       }
-    } catch (e) {}
+    }
+    if (await copyText(`${text} ${url}`)) {
+      ui.toast("Скопійовано! Встав у чат 👍");
+      return;
+    }
+    $("share-tg").href = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    $("share-text").value = `${text} ${url}`;
+    $("share-fallback").hidden = false;
   });
 
   // ---------- Рейтинг ----------
@@ -121,7 +181,11 @@
   function prepareSubmit(result) {
     $("lb-form").hidden = true;
     lbStatus("");
-    if (!Leaderboard.enabled || result.km < MIN_KM_FOR_BOARD) return;
+    if (!Leaderboard.enabled) return;
+    if (result.km < MIN_KM_FOR_BOARD) {
+      lbStatus("Пробіжи хоча б 100 м, щоб потрапити в рейтинг 🏃");
+      return;
+    }
     if (Leaderboard.getName()) submitRun(result);
     else {
       $("lb-name").value = "";
@@ -144,6 +208,7 @@
     const name = $("lb-name").value.trim();
     if (name.length < 2) return;
     Leaderboard.setName(name);
+    renderStartName();
     $("lb-form").hidden = true;
     if (lastResult) submitRun(lastResult);
   });
@@ -183,6 +248,7 @@
     const name = prompt("Нове ім'я для рейтингу (оновиться після наступного забігу):", Leaderboard.getName());
     if (name && name.trim().length >= 2) {
       Leaderboard.setName(name);
+      renderStartName();
       loadLeaders();
     }
   });
@@ -199,4 +265,5 @@
   }
 
   renderRewards();
+  renderStartName();
 })();
