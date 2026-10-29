@@ -68,6 +68,7 @@
       this.nextObstacle = 1.2;
       this.nextPickup = 2.5;
       this.milestone = 0;
+      this.lowWarned = false;
       this.time = 0;
     }
 
@@ -147,6 +148,14 @@
         this.ui.toast(m.label);
         this.milestone++;
         this.burst(p.x, p.y - 40, this.colors.accent, 24);
+      }
+
+      // Одне попередження, коли енергії мало; знову спрацює після того, як попили води
+      if (this.energy < 25 && !this.lowWarned) {
+        this.ui.toast("💧 Мало енергії, пий воду!");
+        this.lowWarned = true;
+      } else if (this.energy > 40) {
+        this.lowWarned = false;
       }
 
       this.ui.hud(this.km, this.energy, this.coins);

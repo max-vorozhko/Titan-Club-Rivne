@@ -72,6 +72,8 @@ main { flex: 1; display: flex; min-height: 0; }
 .hud__dist { font: 700 28px var(--font-display); min-width: 110px; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
 .hud__energy { flex: 1; height: 12px; background: rgba(255,255,255,.6); border-radius: 999px; overflow: hidden; border: 2px solid var(--ink); }
 .hud__energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--brand), var(--accent)); transition: width .15s; }
+.hud__energy.is-low { border-color: #e53935; animation: low-pulse .6s ease-in-out infinite alternate; }
+@keyframes low-pulse { to { box-shadow: 0 0 0 4px rgba(229,57,53,.35); } }
 .hud__coins { font: 700 20px var(--font-display); }
 
 .toast {
@@ -92,6 +94,7 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .overlay h1 { margin: 0; font: 700 48px var(--font-display); letter-spacing: 2px; color: var(--ink); line-height: 1; }
 .overlay h1 span { color: var(--brand); }
+.overlay__record { margin: 0; padding: 6px 16px; border-radius: 999px; background: var(--brand); color: #fff; font: 700 18px var(--font-display); text-transform: uppercase; letter-spacing: 1px; }
 .overlay h2 { margin: 0; font: 700 34px var(--font-display); text-transform: uppercase; }
 .overlay__logo { width: min(220px, 55vw); }
 .overlay__lead { max-width: 420px; margin: 0; }

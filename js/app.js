@@ -34,6 +34,7 @@
     hud(km, energy, coins) {
       $("hud-km").textContent = km.toFixed(2);
       $("hud-energy").style.width = Math.max(0, energy) + "%";
+      $("hud-energy").parentNode.classList.toggle("is-low", energy < 25);
       $("hud-coins").textContent = coins;
     },
     toast(text) {
@@ -49,7 +50,9 @@
       const isRecord = result.km > getBest();
       setBest(best);
       $("hud").hidden = true;
-      $("over-title").textContent = isRecord ? "Новий рекорд! 🏆" : result.reason;
+      // Причину показуємо завжди, щоб було зрозуміло, чим закінчився забіг
+      $("over-title").textContent = result.reason;
+      $("over-record").hidden = !isRecord;
       $("over-km").textContent = result.km.toFixed(2);
       $("over-coins").textContent = result.coins;
       $("over-pace").textContent = result.mark;
