@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Лідерборд Titan Run.
+// Кожен гравець входить анонімно і може писати лише власний документ scores/{uid}.
+// Результат можна тільки покращити (або залишити той самий км і змінити ім'я).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /scores/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && validScore(request.resource.data)
+        && (resource == null || request.resource.data.km >= resource.data.km);
+      allow delete: if false;
+    }
+
+    function validScore(d) {
+      return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'updatedAt'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
+        && d.km is number && d.km > 0 && d.km <= 60
+        && d.time is number && d.time > 0
+        // Найбільша можлива середня швидкість у грі ≈ 0.263 км/с (максимум + гель)
+        && d.km <= d.time * 0.27
+        && d.coins is int && d.coins >= 0 && d.coins <= d.km * 120
+        && d.updatedAt == request.time;
+    }
+  }
+}

@@ -235,7 +235,7 @@
       this.burst(this.player.x, this.player.y - 30, this.colors.brand, 30);
       this.draw(0);
       const reached = MILESTONES.slice(0, this.milestone).pop();
-      this.ui.over({ km: this.km, coins: this.coins, reason, mark: reached ? reached.label.replace(/[!—].*$/, "").trim() : "—" });
+      this.ui.over({ km: this.km, coins: this.coins, time: this.time, reason, mark: reached ? reached.label.replace(/[!—].*$/, "").trim() : "—" });
     }
 
     burst(x, y, color, n) {

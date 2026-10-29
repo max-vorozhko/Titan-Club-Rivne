@@ -43,7 +43,7 @@ body {
 .tabs__btn {
   border: 0; background: none; color: var(--ink);
   font: 600 15px var(--font-display); text-transform: uppercase; letter-spacing: 1px;
-  padding: 8px 16px; border-radius: 999px; cursor: pointer;
+  padding: 8px 12px; border-radius: 999px; cursor: pointer;
 }
 .tabs__btn.is-active { background: var(--brand); color: #fff; }
 
@@ -146,3 +146,29 @@ main { flex: 1; display: flex; min-height: 0; }
 .footer a { color: #fff; text-decoration: none; }
 .footer__sep { color: var(--brand); margin: 0 6px; }
 .footer__credit { font-weight: 700; letter-spacing: .5px; }
+
+/* Рейтинг */
+.btn--small { font-size: 16px; padding: 10px 20px; background: var(--ink); color: #fff; }
+.lb-form { display: flex; gap: 8px; width: min(360px, 100%); }
+.lb-form__input {
+  flex: 1; min-width: 0; padding: 10px 16px; border-radius: 999px; border: 2px solid var(--ink);
+  font: 600 16px var(--font); color: var(--ink); background: #fff;
+}
+.lb-form__input:focus { outline: none; border-color: var(--brand); }
+.lb-status { margin: 0; font-weight: 700; }
+
+.lb-me { margin: 12px 0 0; padding: 10px 14px; background: var(--surface); border-radius: var(--radius); font-size: 14px; }
+.link { border: 0; background: none; padding: 0; color: var(--brand); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+.leaders { list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; gap: 8px; }
+.leaders__row {
+  display: grid; grid-template-columns: 40px 1fr auto auto; align-items: center; gap: 10px;
+  padding: 12px 14px; background: var(--surface); border-radius: var(--radius);
+}
+.leaders__row.is-me { outline: 2px solid var(--brand); }
+.leaders__place { font: 700 20px var(--font-display); text-align: center; color: var(--muted); }
+.leaders__name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leaders__name small { color: var(--brand); font-weight: 600; }
+.leaders__coins { font-size: 13px; color: var(--muted); }
+.leaders__km { font: 700 20px var(--font-display); color: var(--brand); }
+.leaders__empty { padding: 20px; text-align: center; color: var(--muted); background: var(--surface); border-radius: var(--radius); }

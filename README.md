@@ -25,6 +25,33 @@ https://max-vorozhko.github.io/Titan-Club-Rivne/
 - Перешкоди: конуси, калюжі, лавки, собаки (з 1.5 км), шлагбауми (з 4 км, потрібен подвійний стрибок).
 - Відмітки 1 км, 5K, 10K, півмарафон і марафон; рекорд зберігається в браузері; результатом можна поділитися.
 
+## Рейтинг (Firebase)
+
+Лідерборд зберігається у Firebase: анонімний вхід + Firestore, колекція `scores/{uid}` з кращим результатом кожного гравця.
+Правила безпеки (`firestore.rules`) дозволяють гравцю писати лише свій документ, лише покращувати результат,
+обмежують ім'я (2–20 символів), дистанцію (до 60 км) і відсікають фізично неможливу швидкість.
+
+Поки в `js/config.js` немає конфігу Firebase, вкладка «Рейтинг» показує «В розробці».
+
+### Налаштування (один раз)
+
+1. https://console.firebase.google.com → **Add project** (наприклад, `titan-run`), Google Analytics можна вимкнути.
+2. **Build → Authentication → Get started → Sign-in method → Anonymous → Enable**.
+3. **Build → Firestore Database → Create database** → регіон `eur3 (europe-west)` → *Start in production mode*.
+4. **Firestore → Rules**: вставити вміст `firestore.rules` → **Publish**.
+5. **Project settings → Your apps → Web (`</>`)** → зареєструвати застосунок → скопіювати `firebaseConfig`
+   у `js/config.js` (поле `firebase`).
+6. **Authentication → Settings → Authorized domains**: додати `max-vorozhko.github.io`.
+
+Видалити фейковий результат: **Firestore → Data → scores →** документ → Delete.
+
+### Тестування правил локально
+
+```bash
+npm i -g firebase-tools
+firebase emulators:start --only auth,firestore --project demo-titan
+```
+
 ## Бонусна програма
 
 | Пробіжок | Подарунок |
@@ -52,9 +79,13 @@ https://max-vorozhko.github.io/Titan-Club-Rivne/
 ```
 index.html
 css/style.css
+js/config.js      — налаштування (конфіг Firebase)
+js/leaderboard.js — рейтинг: анонімний вхід і Firestore
 js/game.js        — гра (canvas)
 js/rewards.js     — рівні бонусів
 js/attendance.js  — відмітки присутності
 js/app.js         — вкладки, інтерфейс, зв'язка гри та бонусів
 assets/logo.png
+firestore.rules   — правила безпеки рейтингу
+firebase.json     — конфіг Firebase CLI/емуляторів
 ```
