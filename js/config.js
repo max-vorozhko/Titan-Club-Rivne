@@ -4,6 +4,8 @@
 // Якщо прибрати firebase (null), вкладка «Рейтинг» покаже «В розробці».
 window.TITAN_CONFIG = Object.assign(
   {
+    // Публічна адреса гри, якою діляться гравці
+    shareUrl: "https://max-vorozhko.github.io/Titan-Club-Rivne/",
     firebase: {
       apiKey: "AIzaSyC3ATlAmf9Fcb92A2k1xam9qfjgN7ipHcw",
       authDomain: "titan-run.firebaseapp.com",

@@ -96,7 +96,7 @@
       Leaderboard.setName(typed);
       renderStartName();
     }
-    $("share-fallback").hidden = true;
+    $("share-sheet").hidden = true;
     $("screen-start").hidden = true;
     $("screen-over").hidden = true;
     $("hud").hidden = false;
@@ -120,48 +120,38 @@
     else if (!$("screen-start").hidden || !$("screen-over").hidden) start();
   });
 
-  // Копіювання з запасним способом для WebView, де Clipboard API заборонено
-  async function copyText(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (e) {}
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "");
-    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
-    document.body.appendChild(ta);
-    ta.select();
-    let ok = false;
-    try {
-      ok = document.execCommand("copy");
-    } catch (e) {}
-    ta.remove();
-    return ok;
-  }
-
-  // Системне меню → копіювання → панель з Telegram і текстом для ручного копіювання
-  $("btn-share").addEventListener("click", async () => {
+  // Меню «Поділитись»: соцмережі, картинка для сторіс, копіювання, системне меню
+  $("btn-share").addEventListener("click", () => {
     if (!lastResult) return;
-    const url = location.href.split("#")[0];
-    const text = `Мій результат у грі Titan Run від @titan.club.rivne: ${lastResult.km.toFixed(2)} км 🏃 А ти?`;
-    $("share-fallback").hidden = true;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Titan Run", text, url });
-        return;
-      } catch (e) {
-        if (e.name === "AbortError") return; // користувач сам закрив меню
-      }
-    }
-    if (await copyText(`${text} ${url}`)) {
-      ui.toast("Скопійовано! Встав у чат 👍");
+    const sheet = $("share-sheet");
+    if (!sheet.hidden) {
+      sheet.hidden = true;
       return;
     }
-    $("share-tg").href = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-    $("share-text").value = `${text} ${url}`;
-    $("share-fallback").hidden = false;
+    const l = Share.links(lastResult);
+    $("share-telegram").href = l.telegram;
+    $("share-viber").href = l.viber;
+    $("share-whatsapp").href = l.whatsapp;
+    $("share-facebook").href = l.facebook;
+    $("share-x").href = l.x;
+    $("share-more").hidden = !Share.hasNative;
+    sheet.hidden = false;
+  });
+
+  $("share-copy").addEventListener("click", async () => {
+    ui.toast((await Share.copy(lastResult)) ? "Скопійовано! Встав у чат 👍" : "Не вдалося скопіювати 😕");
+  });
+
+  $("share-more").addEventListener("click", () => Share.native(lastResult));
+
+  $("share-story").addEventListener("click", async () => {
+    ui.toast("Готую картинку…");
+    try {
+      const how = await Share.shareImage(lastResult);
+      if (how === "downloaded") ui.toast("Картинку збережено — додай її в сторіс 📸");
+    } catch (e) {
+      ui.toast("Не вдалося створити картинку 😕");
+    }
   });
 
   // ---------- Рейтинг ----------
