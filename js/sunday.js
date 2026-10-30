@@ -193,34 +193,80 @@
     c.stroke();
   }
 
-  // Стилізована будівля КТС (місце збору клубу)
+  // Будівля КТС (місце збору клубу): графітовий фасад, мансарда під черепицею,
+  // бірюзовий логотип у заокругленій рамці на розі та бірюзовий портал входу
+  const KTS = { wall: "#4b4a4f", trim: "#3c3b40", roof: "#8b4a36", mint: "#3cc9b4", glass: "#8fb7c9", frame: "#2a2a2e" };
+
   function drawKTS(c, x, ground, s) {
-    const w = 260 * s;
-    const h = 170 * s;
+    const w = 300 * s;
+    const h = 150 * s;
     const top = ground - h;
-    c.fillStyle = "#e9e4dc";
-    c.fillRect(x, top, w, h);
-    c.fillStyle = "#cfc7bb";
-    c.fillRect(x, top, w, 10 * s);
-    c.fillStyle = "#9fd3f0";
-    for (let i = 0; i < 4; i++) {
-      c.fillRect(x + 18 * s + i * 60 * s, top + 34 * s, 42 * s, 38 * s);
-      if (i !== 1) c.fillRect(x + 18 * s + i * 60 * s, top + 92 * s, 42 * s, 50 * s);
+
+    // Дах-мансарда з двома слуховими вікнами
+    c.fillStyle = KTS.roof;
+    c.beginPath();
+    c.moveTo(x - 6 * s, top);
+    c.lineTo(x + 26 * s, top - 44 * s);
+    c.lineTo(x + w - 26 * s, top - 44 * s);
+    c.lineTo(x + w + 6 * s, top);
+    c.fill();
+    for (const dx of [150, 232]) {
+      c.fillStyle = KTS.wall;
+      c.fillRect(x + dx * s, top - 34 * s, 26 * s, 26 * s);
+      c.fillStyle = KTS.glass;
+      c.fillRect(x + (dx + 6) * s, top - 28 * s, 14 * s, 18 * s);
+      c.fillStyle = KTS.roof;
+      c.beginPath();
+      c.moveTo(x + (dx - 4) * s, top - 34 * s);
+      c.lineTo(x + (dx + 13) * s, top - 46 * s);
+      c.lineTo(x + (dx + 30) * s, top - 34 * s);
+      c.fill();
     }
-    c.fillStyle = "#5a4a3a";
-    c.fillRect(x + 78 * s, top + 92 * s, 42 * s, h - 92 * s);
-    c.fillStyle = css("--brand");
-    c.fillRect(x + 64 * s, top + 80 * s, 72 * s, 10 * s);
-    // Вивіска
-    c.fillStyle = css("--ink");
-    c.fillRect(x + w / 2 - 50 * s, top - 34 * s, 100 * s, 34 * s);
-    c.fillStyle = "#fff";
-    c.font = `700 ${24 * s}px Oswald, sans-serif`;
+
+    // Фасад і карниз із зубчиками
+    c.fillStyle = KTS.wall;
+    c.fillRect(x, top, w, h);
+    c.fillStyle = KTS.trim;
+    c.fillRect(x, top, w, 8 * s);
+    for (let i = 0; i < 30; i++) c.fillRect(x + (4 + i * 10) * s, top + 8 * s, 5 * s, 5 * s);
+    c.fillRect(x, top + 72 * s, w, 4 * s);
+
+    // Вікна (на лівому розі вікон менше — там логотип)
+    for (const [wx, wy, ww, wh] of [[150, 22, 20, 40], [196, 22, 20, 40], [242, 22, 20, 40], [150, 86, 22, 46], [242, 86, 22, 46]]) {
+      c.fillStyle = KTS.frame;
+      c.fillRect(x + wx * s, top + wy * s, ww * s, wh * s);
+      c.fillStyle = KTS.glass;
+      c.fillRect(x + (wx + 3) * s, top + (wy + 3) * s, (ww - 6) * s, (wh - 6) * s);
+    }
+
+    // Бірюзовий логотип у заокругленій рамці
+    const lx = x + 8 * s;
+    const ly = top + 14 * s;
+    const lw = 128 * s;
+    const lh = 60 * s;
+    c.strokeStyle = KTS.mint;
+    c.lineWidth = 7 * s;
+    c.beginPath();
+    if (c.roundRect) c.roundRect(lx, ly, lw, lh, lh / 2);
+    else c.rect(lx, ly, lw, lh);
+    c.stroke();
+    c.fillStyle = KTS.mint;
+    c.font = `800 ${38 * s}px Montserrat, sans-serif`;
     c.textAlign = "center";
     c.textBaseline = "middle";
-    c.fillText("КТС", x + w / 2, top - 16 * s);
+    c.fillText("КТС", lx + lw / 2, ly + lh / 2 + 2 * s);
     c.textAlign = "left";
     c.textBaseline = "alphabetic";
+
+    // Вхід: бірюзовий портал-навіс і скляні двері
+    const ex = x + 96 * s;
+    c.fillStyle = KTS.mint;
+    c.fillRect(ex - 8 * s, top + 84 * s, 52 * s, 7 * s);
+    c.fillRect(ex + 36 * s, top + 84 * s, 8 * s, h - 84 * s);
+    c.fillStyle = KTS.frame;
+    c.fillRect(ex, top + 94 * s, 32 * s, h - 94 * s);
+    c.fillStyle = "#5f7f8f";
+    c.fillRect(ex + 3 * s, top + 97 * s, 26 * s, h - 97 * s);
   }
 
   // ---------- Гра ----------
@@ -471,7 +517,7 @@
         this.drawLandmark(c, sx, stop.name);
       }
       // КТС на старті й фініші
-      for (const kx of [-330, this.track.end + 120]) {
+      for (const kx of [-100, this.track.end + 120]) {
         const sx = kx - cam;
         if (sx > -300 && sx < W + 50) drawKTS(c, sx, GROUND, 1);
       }
@@ -591,15 +637,16 @@
 
     drawBanner(c, x, text) {
       if (x < -120 || x > this.W + 120) return;
+      // Банер вище даху КТС, щоб не закривав будівлю
       c.fillStyle = "#555";
-      c.fillRect(x - 70, GROUND - 120, 6, 120);
-      c.fillRect(x + 64, GROUND - 120, 6, 120);
+      c.fillRect(x - 70, GROUND - 220, 5, 220);
+      c.fillRect(x + 65, GROUND - 220, 5, 220);
       c.fillStyle = css("--brand");
-      c.fillRect(x - 74, GROUND - 140, 148, 30);
+      c.fillRect(x - 74, GROUND - 240, 148, 30);
       c.fillStyle = "#fff";
       c.font = "700 18px Oswald, sans-serif";
       c.textAlign = "center";
-      c.fillText(text, x, GROUND - 118);
+      c.fillText(text, x, GROUND - 218);
       c.textAlign = "left";
     }
 
@@ -780,7 +827,7 @@
     c.fillText(`Тиждень №${result.week.number} · ${result.week.theme.name}`, W / 2, 240);
 
     // КТС і група на тлі
-    drawKTS(c, 160, 1180, 3);
+    drawKTS(c, 90, 1180, 3);
     c.fillStyle = "#cfc9bf";
     c.fillRect(0, 1180, W, 120);
 
