@@ -61,8 +61,9 @@ main { flex: 1; display: flex; min-height: 0; }
   overflow: hidden;
   touch-action: manipulation;
   user-select: none;
+  min-width: 0;
 }
-#game-canvas { display: block; width: 100%; height: 100%; }
+.game canvas { display: block; width: 100%; height: 100%; }
 
 .hud {
   position: absolute; top: 12px; left: 12px; right: 12px;
@@ -194,3 +195,51 @@ main { flex: 1; display: flex; min-height: 0; }
 .start-name { width: min(320px, 100%); display: flex; }
 .start-name .lb-form__input { text-align: center; }
 .start-who { margin: 0; font-size: 14px; }
+
+/* ---------- Недільна пробіжка ---------- */
+.sun-hud { flex-direction: column; align-items: stretch; gap: 6px; }
+.sun-hud__row { display: flex; justify-content: space-between; align-items: baseline; }
+.sun-hud .hud__dist small, .sun-hud__time small { font: 600 14px var(--font); color: var(--ink); }
+.sun-hud__time { font: 700 26px var(--font-display); }
+.sun-hud .hud__energy { flex: none; }
+.sun-route { height: 6px; border-radius: 999px; background: rgba(255,255,255,.6); overflow: hidden; }
+.sun-route__fill { height: 100%; width: 0; background: var(--ink); }
+.sun-hud__group { font: 600 13px var(--font); }
+
+.sun-controls {
+  position: absolute; left: 12px; right: 12px; bottom: 12px;
+  display: flex; justify-content: space-between; gap: 12px; pointer-events: none;
+}
+.sun-ctrl {
+  pointer-events: auto; flex: 1; max-width: 180px; height: 64px; border: 0; border-radius: 18px;
+  font: 700 18px var(--font-display); text-transform: uppercase; letter-spacing: 1px; color: #fff;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  box-shadow: 0 4px 0 rgba(0,0,0,.25); opacity: .92;
+}
+.sun-ctrl--sprint { background: var(--ink); }
+.sun-ctrl--sprint.is-on { background: var(--accent); color: var(--ink); transform: translateY(2px); }
+.sun-ctrl--jump { background: var(--brand); }
+
+.sun-title { font-size: clamp(30px, 9vw, 44px) !important; }
+.sun-route-text { margin: 0; max-width: 440px; font-size: 14px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 4px; gap: 4px; }
+.seg__btn {
+  border: 0; background: none; border-radius: 999px; padding: 8px 18px; cursor: pointer;
+  font: 700 16px var(--font-display); color: var(--ink);
+}
+.seg__btn.is-active { background: var(--ink); color: #fff; }
+
+.sun-photo { max-height: 34vh; max-width: 70%; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+.sun-board { justify-content: flex-start; }
+.sun-board .leaders { text-align: left; }
+#sun-toast { top: 132px; }
+.sun-board .leaders { width: min(440px, 100%); margin: 0; }
+.sun-board__sub { margin: 10px 0 0; font: 600 16px var(--font-display); text-transform: uppercase; color: var(--muted); }
+.sun-archive__row .leaders__place { font-size: 15px; }
+.sun-archive__who { display: block; color: var(--muted); font-weight: 600; }
+
+/* Чотири вкладки на вузьких екранах */
+@media (max-width: 440px) {
+  .topbar__logo { height: 40px; }
+  .tabs__btn { font-size: 13px; padding: 7px 9px; letter-spacing: .5px; }
+}

@@ -106,11 +106,14 @@
 
   // Ділимось картинкою через системне меню (на телефоні туди входить Instagram), інакше — завантажуємо файл
   async function shareImage(result) {
-    const blob = await storyImage(result);
-    const file = new File([blob], `titan-run-${result.km.toFixed(2)}km.png`, { type: "image/png" });
+    return shareBlob(await storyImage(result), `titan-run-${result.km.toFixed(2)}km.png`, message(result));
+  }
+
+  async function shareBlob(blob, filename, text) {
+    const file = new File([blob], filename, { type: "image/png" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], text: `${message(result)} ${GAME_URL}` });
+        await navigator.share({ files: [file], text: `${text} ${GAME_URL}` });
         return "shared";
       } catch (e) {
         if (e.name === "AbortError") return "cancelled";
@@ -144,6 +147,7 @@
     copy: (result) => copy(`${message(result)} ${GAME_URL}`),
     native,
     shareImage,
+    shareBlob,
     storyImage,
   };
 })();
