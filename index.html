@@ -10,11 +10,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
   <header class="topbar">
-    <img src="assets/logo.png" alt="Titan Club Rivne" class="topbar__logo">
+    <a href="./" class="topbar__home" id="home-link" aria-label="На головну">
+      <img src="assets/logo.png" alt="Titan Club Rivne" class="topbar__logo">
+    </a>
     <nav class="tabs" role="tablist">
       <button class="tabs__btn is-active" data-tab="game" role="tab">Гра</button>
       <button class="tabs__btn" data-tab="sunday" role="tab">Неділя</button>
@@ -141,8 +143,9 @@
           <p class="lb-status" id="sun-status" hidden></p>
           <div class="overlay__actions">
             <button class="btn btn--primary" id="sun-again">Ще раз</button>
-            <button class="btn btn--ghost" id="sun-share">Поділитись фото</button>
+            <button class="btn btn--ghost" id="sun-pick">Вибір дистанції</button>
           </div>
+          <button class="btn btn--ghost" id="sun-share">Поділитись фото</button>
           <button class="link" id="sun-finish-board" type="button">🏆 Рейтинг тижня</button>
         </div>
 
@@ -197,13 +200,13 @@
     <span class="footer__credit">Powered by Max Vorozhko</span>
   </footer>
 
-  <script src="js/config.js?v=10"></script>
-  <script src="js/leaderboard.js?v=10"></script>
-  <script src="js/share.js?v=10"></script>
-  <script src="js/rewards.js?v=10"></script>
-  <script src="js/game.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
-  <script src="js/sunday.js?v=10"></script>
-  <script src="js/sunday-ui.js?v=10"></script>
+  <script src="js/config.js?v=11"></script>
+  <script src="js/leaderboard.js?v=11"></script>
+  <script src="js/share.js?v=11"></script>
+  <script src="js/rewards.js?v=11"></script>
+  <script src="js/game.js?v=11"></script>
+  <script src="js/app.js?v=11"></script>
+  <script src="js/sunday.js?v=11"></script>
+  <script src="js/sunday-ui.js?v=11"></script>
 </body>
 </html>

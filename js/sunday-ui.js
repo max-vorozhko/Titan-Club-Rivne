@@ -39,6 +39,7 @@
       $("sun-res-time").textContent = formatTime(result.time);
       $("sun-res-pace").textContent = formatTime(result.pace);
       $("sun-res-stumbles").textContent = result.stumbles;
+      $("sun-again").textContent = `Ще раз · ${result.dist} км`;
       renderPhoto(null);
       submit(result);
       setTimeout(() => ($("sun-finish").hidden = false), 400);
@@ -174,7 +175,15 @@
   });
 
   $("sun-go").addEventListener("click", start);
+  // «Вибір дистанції» повертає на старт; «Ще раз» перезапускає ту саму дистанцію
+  function backToStart() {
+    ["sun-finish", "sun-board", "sun-pause"].forEach((id) => ($(id).hidden = true));
+    renderStart();
+    $("sun-start").hidden = false;
+  }
+
   $("sun-again").addEventListener("click", start);
+  $("sun-pick").addEventListener("click", backToStart);
   $("sun-name-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") start();
   });
@@ -225,7 +234,8 @@
     if (e.code === "Space" || e.code === "ArrowUp") {
       e.preventDefault();
       if (game.running) game.jump();
-      else if (!$("sun-start").hidden || !$("sun-finish").hidden) start();
+      else if (!$("sun-start").hidden) start();
+      else if (!$("sun-finish").hidden) backToStart();
     } else if (e.code === "ArrowRight" || e.code === "ShiftLeft" || e.code === "ShiftRight") {
       e.preventDefault();
       game.setSprint(true);
