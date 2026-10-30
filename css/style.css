@@ -38,6 +38,7 @@ body {
   background: var(--surface);
   border-bottom: 3px solid var(--brand);
 }
+.topbar__home { display: flex; }
 .topbar__logo { height: 48px; }
 .tabs { display: flex; gap: 4px; background: var(--surface-2); border-radius: 999px; padding: 4px; }
 .tabs__btn {

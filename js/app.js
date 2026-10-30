@@ -27,6 +27,17 @@
     });
   });
 
+  // Лого веде на головну: вкладка «Гра» зі стартовим екраном
+  $("home-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    document.querySelector('.tabs__btn[data-tab="game"]').click();
+    if (!game.running) {
+      $("screen-over").hidden = true;
+      $("screen-start").hidden = false;
+      window.scrollTo(0, 0);
+    }
+  });
+
   // ---------- Гра ----------
   let toastTimer;
   let lastResult = null;
