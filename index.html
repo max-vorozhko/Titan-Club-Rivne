@@ -10,13 +10,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
   <header class="topbar">
     <img src="assets/logo.png" alt="Titan Club Rivne" class="topbar__logo">
     <nav class="tabs" role="tablist">
       <button class="tabs__btn is-active" data-tab="game" role="tab">Гра</button>
+      <button class="tabs__btn" data-tab="sunday" role="tab">Неділя</button>
       <button class="tabs__btn" data-tab="leaders" role="tab">Рейтинг</button>
       <button class="tabs__btn" data-tab="rewards" role="tab">Бонуси</button>
     </nav>
@@ -87,6 +88,83 @@
       </div>
     </section>
 
+    <!-- НЕДІЛЬНА ПРОБІЖКА -->
+    <section id="tab-sunday" class="tab">
+      <div class="game">
+        <canvas id="sun-canvas"></canvas>
+
+        <div class="hud sun-hud" id="sun-hud" hidden>
+          <div class="sun-hud__row">
+            <div class="hud__dist"><span id="sun-km">0.00</span><small> / <span id="sun-dist">5</span> км</small></div>
+            <div class="sun-hud__time"><span id="sun-time">0:00</span><small id="sun-pace"></small></div>
+          </div>
+          <div class="hud__energy"><div class="hud__energy-fill" id="sun-energy"></div></div>
+          <div class="sun-route"><div class="sun-route__fill" id="sun-progress"></div></div>
+          <div class="sun-hud__group" id="sun-group"></div>
+        </div>
+        <div class="toast" id="sun-toast"></div>
+
+        <div class="sun-controls" id="sun-controls" hidden>
+          <button class="sun-ctrl sun-ctrl--sprint" id="sun-sprint" type="button">⚡ Темп</button>
+          <button class="sun-ctrl sun-ctrl--jump" id="sun-jump" type="button">⬆ Стрибок</button>
+        </div>
+
+        <div class="overlay" id="sun-start">
+          <span class="badge" id="sun-week"></span>
+          <h1 class="sun-title">НЕДІЛЬНА <span>ПРОБІЖКА</span></h1>
+          <p class="sun-route-text" id="sun-route"></p>
+          <p class="overlay__lead">Біжи з групою Titan Club від КТС і назад. Разом легше: поруч з групою енергія відновлюється. На фініші — спільне фото й кава ☕</p>
+          <ul class="howto">
+            <li><b>⬆ Стрибок</b> — тап по екрану, Пробіл або ↑</li>
+            <li><b>⚡ Темп</b> — утримуй кнопку або → (швидше, але витрачає енергію)</li>
+            <li>Спіткнувся — втрачаєш час, але біжиш далі</li>
+          </ul>
+          <div class="seg" id="sun-dist-pick">
+            <button class="seg__btn is-active" data-dist="5" type="button">5 км</button>
+            <button class="seg__btn" data-dist="10" type="button">10 км</button>
+          </div>
+          <div class="start-name" id="sun-name" hidden>
+            <input class="lb-form__input" id="sun-name-input" maxlength="20" placeholder="Твоє ім'я для рейтингу" autocomplete="nickname">
+          </div>
+          <button class="btn btn--primary" id="sun-go">Старт від КТС!</button>
+          <button class="link" id="sun-open-board" type="button">🏆 Рейтинг тижня й архів</button>
+        </div>
+
+        <div class="overlay" id="sun-finish" hidden>
+          <h2>Фініш біля КТС! ☕</h2>
+          <img class="sun-photo" id="sun-photo" alt="Спільне фото на фініші">
+          <div class="result">
+            <div><span class="result__val" id="sun-res-time">0:00</span><span class="result__lbl">час</span></div>
+            <div><span class="result__val" id="sun-res-pace">—</span><span class="result__lbl">темп /км</span></div>
+            <div><span class="result__val" id="sun-res-stumbles">0</span><span class="result__lbl">спіткнувся</span></div>
+          </div>
+          <p class="lb-status" id="sun-status" hidden></p>
+          <div class="overlay__actions">
+            <button class="btn btn--primary" id="sun-again">Ще раз</button>
+            <button class="btn btn--ghost" id="sun-share">Поділитись фото</button>
+          </div>
+          <button class="link" id="sun-finish-board" type="button">🏆 Рейтинг тижня</button>
+        </div>
+
+        <div class="overlay" id="sun-pause" hidden>
+          <h2>Пауза</h2>
+          <button class="btn btn--primary" id="sun-resume">Продовжити</button>
+        </div>
+
+        <div class="overlay sun-board" id="sun-board" hidden>
+          <h2 id="sun-board-title">Рейтинг тижня</h2>
+          <div class="seg" id="sun-board-dist">
+            <button class="seg__btn is-active" data-dist="5" type="button">5 км</button>
+            <button class="seg__btn" data-dist="10" type="button">10 км</button>
+          </div>
+          <ol class="leaders" id="sun-board-list"></ol>
+          <h3 class="sun-board__sub">Архів: переможці тижнів</h3>
+          <ol class="leaders" id="sun-archive"></ol>
+          <button class="btn btn--ghost" id="sun-board-close" type="button">Назад</button>
+        </div>
+      </div>
+    </section>
+
     <!-- РЕЙТИНГ -->
     <section id="tab-leaders" class="tab">
       <div class="panel">
@@ -119,11 +197,13 @@
     <span class="footer__credit">Powered by Max Vorozhko</span>
   </footer>
 
-  <script src="js/config.js?v=5"></script>
-  <script src="js/leaderboard.js?v=5"></script>
-  <script src="js/share.js?v=5"></script>
-  <script src="js/rewards.js?v=5"></script>
-  <script src="js/game.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/config.js?v=8"></script>
+  <script src="js/leaderboard.js?v=8"></script>
+  <script src="js/share.js?v=8"></script>
+  <script src="js/rewards.js?v=8"></script>
+  <script src="js/game.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
+  <script src="js/sunday.js?v=8"></script>
+  <script src="js/sunday-ui.js?v=8"></script>
 </body>
 </html>

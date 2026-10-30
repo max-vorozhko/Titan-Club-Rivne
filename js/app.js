@@ -23,7 +23,7 @@
       document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("is-active", t.id === "tab-" + btn.dataset.tab));
       if (btn.dataset.tab === "game") game.resize();
       else if (btn.dataset.tab === "leaders") loadLeaders();
-      else renderRewards();
+      else if (btn.dataset.tab === "rewards") renderRewards();
     });
   });
 
@@ -114,6 +114,7 @@
     if (e.code !== "Space" && e.code !== "ArrowUp") return;
     // Пробіл у полі імені — це просто пробіл, а не новий забіг
     if (e.target.tagName === "INPUT") return;
+    if (!$("tab-game").classList.contains("is-active")) return;
     e.preventDefault();
     if (game.running) game.jump();
     else if (!$("tab-game").classList.contains("is-active")) return;

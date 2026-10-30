@@ -114,11 +114,45 @@
     return { best, place: await placeOf(scores, best) };
   }
 
+  // ---------- Недільна пробіжка: рейтинг тижня sunday/{понеділок}/{5k|10k}/{uid} ----------
+
+  function sundayRuns(db, week, dist) {
+    return db.collection("sunday").doc(week).collection(dist + "k");
+  }
+
+  // Найкращий (найменший) час гравця за тиждень на дистанції
+  async function sundaySubmit(run) {
+    const { db, uid } = await connect();
+    const runs = sundayRuns(db, run.week, run.dist);
+    const ref = runs.doc(uid);
+    const name = read(NAME_KEY);
+    const own = await ref.get();
+    const prev = own.exists ? own.data() : null;
+    const stamp = firebase.firestore.FieldValue.serverTimestamp();
+    let best = run.time;
+    if (prev && prev.time <= run.time) {
+      best = prev.time;
+      if (prev.name !== name) await ref.set({ ...prev, name, updatedAt: stamp });
+    } else {
+      await ref.set({ name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), updatedAt: stamp });
+    }
+    const faster = await countOf(runs.where("time", "<", best));
+    return { best, place: faster === null ? null : faster + 1 };
+  }
+
+  async function sundayTop(week, dist, limit) {
+    const { db, uid } = await connect();
+    const snap = await sundayRuns(db, week, dist).orderBy("time").limit(limit || TOP_N).get();
+    return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, me: d.id === uid }));
+  }
+
   window.Leaderboard = {
     enabled,
     getName: () => read(NAME_KEY),
     setName: (name) => write(NAME_KEY, name.trim().slice(0, 20)),
     top,
     submit,
+    sundaySubmit,
+    sundayTop,
   };
 })();

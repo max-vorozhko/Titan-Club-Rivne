@@ -14,6 +14,35 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Недільна пробіжка: найкращий час гравця за тиждень, sunday/{понеділок YYYY-MM-DD}/{5k|10k}/{uid}.
+    // Писати можна лише в поточний тиждень (минулі тижні — незмінний архів) і лише покращувати час.
+    match /sunday/{week}/{dist}/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && dist in ['5k', '10k']
+        && isCurrentWeek(week)
+        && validSunday(request.resource.data, dist == '5k' ? 5 : 10)
+        && (resource == null || request.resource.data.time <= resource.data.time);
+      allow delete: if false;
+    }
+
+    // Запас у добу з кожного боку покриває різницю між UTC і київським часом
+    function isCurrentWeek(week) {
+      return week.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.time > timestamp.date(int(week[0:4]), int(week[5:7]), int(week[8:10])) - duration.value(1, 'd')
+        && request.time < timestamp.date(int(week[0:4]), int(week[5:7]), int(week[8:10])) + duration.value(8, 'd');
+    }
+
+    // Найшвидший можливий темп у грі ≈ 3:26/км (прискорення + гель), тож менше 200 с/км не буває
+    function validSunday(d, km) {
+      return d.keys().hasOnly(['name', 'time', 'stumbles', 'updatedAt'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
+        && d.time is int && d.time >= km * 200 && d.time <= km * 1800
+        && d.stumbles is int && d.stumbles >= 0 && d.stumbles <= 1000
+        && d.updatedAt == request.time;
+    }
+
     function validScore(d) {
       return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'updatedAt'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
