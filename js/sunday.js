@@ -805,8 +805,7 @@
     c.fillStyle = ink;
     c.font = "600 30px Montserrat, sans-serif";
     const names = group.filter((m) => m.name).map((m) => m.name);
-    if (names.length) c.fillText(names.slice(0, 6).join(" · "), W / 2, 1370);
-    if (names.length > 6) c.fillText(names.slice(6, 12).join(" · "), W / 2, 1412);
+    for (let i = 0; i < names.length; i += 5) c.fillText(names.slice(i, i + 5).join(" · "), W / 2, 1362 + (i / 5) * 40);
 
     // Кава на фініші
     for (const [x, col] of [[150, "#6f4e37"], [900, "#c0392b"]]) {
