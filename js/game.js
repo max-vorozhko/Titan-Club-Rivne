@@ -422,8 +422,6 @@
       const air = p.y < GROUND;
       const s = air ? 0.6 : Math.sin(p.phase);
       const x = p.x;
-      const hip = p.y - 28;
-      const shoulder = p.y - 50;
 
       if (this.boost > 0) {
         c.fillStyle = "rgba(255,212,0,.35)";
@@ -432,47 +430,9 @@
         c.fill();
       }
 
-      // Силует у стилі логотипу: помаранчеві торс і голова, графітові кінцівки
-      const { brand, ink } = this.colors;
-      c.lineCap = "round";
-      c.lineWidth = 7;
-      // Задні кінцівки (трохи світліші, щоб читалась глибина)
-      c.globalAlpha = 0.75;
-      c.strokeStyle = ink;
-      limb(c, x, hip, -s, 14, 15);
-      limb(c, x, shoulder + 4, s, 12, 11);
-      c.globalAlpha = 1;
-      // Тулуб
-      c.strokeStyle = brand;
-      c.lineWidth = 13;
-      c.beginPath();
-      c.moveTo(x, hip);
-      c.lineTo(x + 3, shoulder);
-      c.stroke();
-      // Передні кінцівки
-      c.lineWidth = 7;
-      c.strokeStyle = ink;
-      limb(c, x, hip, s, 14, 15);
-      limb(c, x + 2, shoulder + 4, -s, 12, 11);
-      // Голова
-      c.fillStyle = brand;
-      c.beginPath();
-      c.arc(x + 5, shoulder - 11, 9, 0, Math.PI * 2);
-      c.fill();
+      // Бігун у вигляді, який гравець вибрав у профілі
+      Avatar.drawPerson(c, x, p.y, 1, Profile.look(false), s);
     }
-  }
-
-  // Двосегментна кінцівка: кут колінного/ліктьового згину залежить від фази бігу
-  function limb(c, x, y, swing, l1, l2) {
-    const a1 = Math.PI / 2 + swing * 0.8;
-    const kx = x + Math.cos(a1) * l1;
-    const ky = y + Math.sin(a1) * l1;
-    const a2 = a1 + (swing > 0 ? 0.2 : 0.9);
-    c.beginPath();
-    c.moveTo(x, y);
-    c.lineTo(kx, ky);
-    c.lineTo(kx + Math.cos(a2) * l2, ky + Math.sin(a2) * l2);
-    c.stroke();
   }
 
   function mix(a, b, t) {

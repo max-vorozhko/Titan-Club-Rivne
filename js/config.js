@@ -12,6 +12,9 @@ window.TITAN_CONFIG = Object.assign(
     // Код сайту в GoatCounter (статистика відвідувань без cookie): https://КОД.goatcounter.com
     // Порожній рядок — статистика вимкнена.
     goatcounter: "titan-run",
+    // Донат за «Супер-кросівки»: посилання на банку Monobank і де отримати промокод
+    donateUrl: "",
+    promoContact: "",
     // Публічна адреса гри, якою діляться гравці
     shareUrl: "https://max-vorozhko.github.io/Titan-Club-Rivne/",
     firebase: {

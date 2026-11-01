@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
   <header class="topbar">
@@ -22,7 +22,7 @@
       <button class="tabs__btn" data-tab="sunday" role="tab">Неділя</button>
       <button class="tabs__btn" data-tab="trail" role="tab">Трейл</button>
       <button class="tabs__btn" data-tab="leaders" role="tab">Рейтинг</button>
-      <button class="tabs__btn" data-tab="rewards" role="tab">Бонуси</button>
+      <button class="tabs__btn" data-tab="profile" role="tab">Профіль</button>
     </nav>
   </header>
 
@@ -129,6 +129,7 @@
           <div class="start-name" id="sun-name" hidden>
             <input class="lb-form__input" id="sun-name-input" maxlength="20" placeholder="Твоє ім'я для рейтингу" autocomplete="nickname">
           </div>
+          <label class="boost-toggle" id="sun-boost" hidden><input type="checkbox"> ⚡ Взути супер-кросівки <small></small></label>
           <button class="btn btn--primary" id="sun-go">Старт від КТС!</button>
           <button class="link" id="sun-open-board" type="button">🏆 Рейтинг тижня й архів</button>
         </div>
@@ -211,6 +212,7 @@
           <div class="start-name" id="trail-name" hidden>
             <input class="lb-form__input" id="trail-name-input" maxlength="20" placeholder="Твоє ім'я для таблиці" autocomplete="nickname">
           </div>
+          <label class="boost-toggle" id="trail-boost" hidden><input type="checkbox"> ⚡ Взути супер-кросівки <small></small></label>
           <button class="btn btn--primary" id="trail-go">На старт!</button>
           <button class="link" id="trail-open-board" type="button">🏆 Турнірна таблиця</button>
         </div>
@@ -264,19 +266,50 @@
       </div>
     </section>
 
-    <!-- БОНУСИ -->
-    <section id="tab-rewards" class="tab">
-      <div class="panel is-wip">
-        <span class="badge">🚧 В розробці</span>
-        <h2>Недільні пробіжки</h2>
-        <p class="muted">Скоро тут можна буде відмічатися на недільних пробіжках клубу й отримувати подарунки від Titan Club.</p>
+    <!-- ПРОФІЛЬ -->
+    <section id="tab-profile" class="tab">
+      <div class="panel profile">
+        <div class="profile__head">
+          <canvas class="profile__avatar" id="profile-avatar" width="180" height="220"></canvas>
+          <div>
+            <h2 id="profile-name">Мій профіль</h2>
+            <p class="muted small-left">Профіль збережено на цьому пристрої — без реєстрації.</p>
+            <button class="link" id="profile-rename" type="button">змінити ім'я</button>
+          </div>
+        </div>
 
-        <div class="track" id="reward-track"></div>
+        <h3 class="profile__sub">Гардероб</h3>
+        <div id="profile-wardrobe"></div>
 
-        <button class="btn btn--primary btn--wide" disabled>Скоро</button>
+        <h3 class="profile__sub">Статистика</h3>
+        <div class="stats" id="profile-stats"></div>
+
+        <h3 class="profile__sub">Досягнення й мерч</h3>
+        <ul class="achievements" id="profile-achievements"></ul>
+
+        <h3 class="profile__sub">⚡ Супер-кросівки</h3>
+        <div class="boost-card">
+          <p>Буст на <b>один забіг</b> у «Неділі» чи «Трейлі»: золоті кросівки й ≈ <b>−3 с/км</b> до темпу. Результат у таблиці позначається ⚡.</p>
+          <p class="boost-card__count">У тебе: <b id="profile-boosts">0</b> шт.</p>
+          <a class="btn btn--primary btn--wide" id="profile-donate" target="_blank" rel="noopener" hidden>Задонатити 10 грн на банку</a>
+          <p class="muted small-left" id="profile-donate-hint"></p>
+          <form class="lb-form" id="profile-code-form">
+            <input class="lb-form__input" id="profile-code" maxlength="40" placeholder="Промокод" autocomplete="off" autocapitalize="characters" required>
+            <button class="btn btn--small" type="submit">Активувати</button>
+          </form>
+        </div>
+
+        <div class="is-wip profile__bonus">
+          <span class="badge">🚧 В розробці</span>
+          <h3 class="profile__sub">Бонуси за недільні пробіжки</h3>
+          <p class="muted">Скоро тут можна буде відмічатися на недільних пробіжках клубу й отримувати подарунки від Titan Club.</p>
+          <div class="track" id="reward-track"></div>
+        </div>
       </div>
     </section>
   </main>
+
+  <div class="toast toast--global" id="global-toast"></div>
 
   <footer class="footer">
     <a href="https://www.instagram.com/titan.club.rivne" target="_blank" rel="noopener">@titan.club.rivne</a>
@@ -284,16 +317,19 @@
     <span class="footer__credit">Powered by Max Vorozhko</span>
   </footer>
 
-  <script src="js/config.js?v=17"></script>
-  <script src="js/analytics.js?v=17"></script>
-  <script src="js/leaderboard.js?v=17"></script>
-  <script src="js/share.js?v=17"></script>
-  <script src="js/rewards.js?v=17"></script>
-  <script src="js/game.js?v=17"></script>
-  <script src="js/app.js?v=17"></script>
-  <script src="js/sunday.js?v=17"></script>
-  <script src="js/sunday-ui.js?v=17"></script>
-  <script src="js/trail.js?v=17"></script>
-  <script src="js/trail-ui.js?v=17"></script>
+  <script src="js/config.js?v=18"></script>
+  <script src="js/analytics.js?v=18"></script>
+  <script src="js/leaderboard.js?v=18"></script>
+  <script src="js/share.js?v=18"></script>
+  <script src="js/avatar.js?v=18"></script>
+  <script src="js/profile.js?v=18"></script>
+  <script src="js/rewards.js?v=18"></script>
+  <script src="js/game.js?v=18"></script>
+  <script src="js/app.js?v=18"></script>
+  <script src="js/sunday.js?v=18"></script>
+  <script src="js/sunday-ui.js?v=18"></script>
+  <script src="js/trail.js?v=18"></script>
+  <script src="js/trail-ui.js?v=18"></script>
+  <script src="js/profile-ui.js?v=18"></script>
 </body>
 </html>
