@@ -43,6 +43,26 @@ service cloud.firestore {
         && d.updatedAt == request.time;
     }
 
+    // Трейл «Підготовка до Житомирських вертикалей»: найкращий час гравця, trail/{7k|13k|26k}/runs/{uid}
+    match /trail/{dist}/runs/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && dist in ['7k', '13k', '26k']
+        && validTrail(request.resource.data, dist == '7k' ? 7 : (dist == '13k' ? 13 : 26))
+        && (resource == null || request.resource.data.time <= resource.data.time);
+      allow delete: if false;
+    }
+
+    // Навіть з темпом, гелем і на спуску швидше ~2:40/км не буває, тож менше 150 с/км відхиляємо
+    function validTrail(d, km) {
+      return d.keys().hasOnly(['name', 'time', 'stumbles', 'updatedAt'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
+        && d.time is int && d.time >= km * 150 && d.time <= km * 3600
+        && d.stumbles is int && d.stumbles >= 0 && d.stumbles <= 2000
+        && d.updatedAt == request.time;
+    }
+
     function validScore(d) {
       return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'updatedAt'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20

@@ -96,6 +96,8 @@ main { flex: 1; display: flex; min-height: 0; }
   backdrop-filter: blur(4px);
   overflow-y: auto;
 }
+/* Центруємо вміст, але якщо він вищий за екран — гортаємо від верху, а не обрізаємо заголовок */
+.overlay::before, .overlay::after { content: ""; flex: 1 1 0; min-height: 0; }
 .overlay h1 { margin: 0; font: 700 48px var(--font-display); letter-spacing: 2px; color: var(--ink); line-height: 1; }
 .overlay h1 span { color: var(--brand); }
 .overlay__record { margin: 0; padding: 6px 16px; border-radius: 999px; background: var(--brand); color: #fff; font: 700 18px var(--font-display); text-transform: uppercase; letter-spacing: 1px; }
@@ -232,6 +234,7 @@ main { flex: 1; display: flex; min-height: 0; }
 
 .sun-photo { max-height: 34vh; max-width: 70%; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
 .sun-board { justify-content: flex-start; }
+.sun-board::before, .sun-board::after { flex: 0 0 0; }
 .sun-board .leaders { text-align: left; }
 #sun-toast { top: 132px; }
 .sun-board .leaders { width: min(440px, 100%); margin: 0; }
@@ -243,4 +246,26 @@ main { flex: 1; display: flex; min-height: 0; }
 @media (max-width: 440px) {
   .topbar__logo { height: 40px; }
   .tabs__btn { font-size: 13px; padding: 7px 9px; letter-spacing: .5px; }
+}
+
+/* ---------- Трейл ---------- */
+.trail-title { font-size: clamp(26px, 7.5vw, 40px) !important; line-height: 1.05; }
+.trail-title span { display: block; }
+.seg--trail .seg__btn { display: flex; flex-direction: column; align-items: center; line-height: 1.1; padding: 6px 14px; }
+.seg--trail .seg__btn small { font: 600 11px var(--font); opacity: .75; }
+.trail-profile { position: relative; height: 34px; }
+.trail-profile canvas { width: 100%; height: 100%; display: block; }
+.trail-profile__marker {
+  position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; left: 0;
+  background: var(--brand); border-radius: 2px;
+}
+#trail-toast { top: 150px; }
+
+/* П'ять вкладок на вузьких екранах: прокрутка замість переносу */
+.tabs { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs__btn { white-space: nowrap; flex: none; }
+@media (max-width: 440px) {
+  .topbar { gap: 8px; padding-left: 10px; padding-right: 10px; }
+  .tabs__btn { font-size: 12px; padding: 7px 8px; letter-spacing: .3px; }
 }

@@ -27,7 +27,7 @@
     });
   });
 
-  // Лого веде на головну: вкладка «Гра» зі стартовим екраном
+  // Лого веде на головну: вкладка «Біг» зі стартовим екраном
   $("home-link").addEventListener("click", (e) => {
     e.preventDefault();
     document.querySelector('.tabs__btn[data-tab="game"]').click();

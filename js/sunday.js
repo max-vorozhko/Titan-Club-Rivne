@@ -888,5 +888,5 @@
     return new Promise((resolve) => cv.toBlob(resolve, "image/png"));
   }
 
-  window.SundayRun = { SundayGame, weekInfo, formatTime, groupPhoto, buildTrack, PX_PER_KM, TIME_SCALE };
+  window.SundayRun = { SundayGame, weekInfo, formatTime, groupPhoto, buildTrack, PX_PER_KM, TIME_SCALE, drawPerson, rng, hash };
 })();
