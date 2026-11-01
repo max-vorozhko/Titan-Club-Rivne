@@ -14,7 +14,7 @@ window.TITAN_CONFIG = Object.assign(
     goatcounter: "titan-run",
     // Донат за «Супер-кросівки»: посилання на банку Monobank і де отримати промокод.
     // Вставте посилання на банку між лапками, наприклад: donateUrl: "https://send.monobank.ua/jar/XXXXXXXX",
-    donateUrl: "",
+    donateUrl: "https://send.monobank.ua/jar/A25V4sTs2g",
     boostPrice: 30, // грн за одні «Супер-кросівки»
     promoContact: "@max_vorozhko",
     // Публічна адреса гри, якою діляться гравці
