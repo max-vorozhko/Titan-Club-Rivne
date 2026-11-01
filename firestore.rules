@@ -69,7 +69,7 @@ service cloud.firestore {
 
     // Адміністратор (генерує промокоди на сторінці admin.html) — анонімний ідентифікатор його пристрою
     function isAdmin() {
-      return request.auth != null && request.auth.uid in ['ADMIN_UID'];
+      return request.auth != null && request.auth.uid in ['L5F6ELplpsaOGeqSiOqiyoYPTBl1'];
     }
 
     // Одноразові промокоди codes/{КОД}. Звичайні гравці не бачать і не перебирають коди:
