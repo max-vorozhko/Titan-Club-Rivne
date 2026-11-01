@@ -44,6 +44,7 @@
       $("trail-res-pace").textContent = formatTime(result.pace);
       $("trail-res-dplus").textContent = result.dplus;
       $("trail-again").textContent = `Ще раз · ${result.dist} км`;
+      Profile.record({ mode: "trail", dist: result.dist, time: result.time });
       renderPhoto(null);
       submit(result);
       setTimeout(() => ($("trail-finish").hidden = false), 400);
@@ -64,16 +65,18 @@
       b.innerHTML = `${d} км<small>D+ ${makeProfile(d).dplus} м</small>`;
     });
     $("trail-name").hidden = !(Leaderboard.enabled && !Leaderboard.getName());
+    Profile.renderBoostToggle($("trail-boost"));
   }
 
-  function start() {
+  async function start() {
     const typed = $("trail-name-input").value.trim();
     if (!$("trail-name").hidden && typed.length >= 2) Leaderboard.setName(typed);
     ["trail-start", "trail-finish", "trail-board", "trail-pause", "trail-share-sheet"].forEach((id) => ($(id).hidden = true));
     setPlaying(true);
     game.resize();
     drawProfile($("trail-profile"), dist);
-    game.start(dist);
+    const boosted = await Profile.takeBoost($("trail-boost"));
+    game.start(dist, boosted);
   }
 
   function backToStart() {
@@ -104,9 +107,10 @@
     if (!Leaderboard.getName()) return status("Введи ім'я на старті, щоб потрапити в турнірну таблицю");
     status("Зберігаю результат…");
     try {
-      const res = await Leaderboard.trailSubmit({ dist: result.dist, time: result.time, stumbles: result.stumbles });
+      const res = await Leaderboard.trailSubmit({ dist: result.dist, time: result.time, stumbles: result.stumbles, boost: result.boost });
       status(res.place ? `📊 #${res.place} у таблиці на ${result.dist} км (кращий час ${formatTime(res.best)})` : "Результат збережено");
       lastPlace = res.place;
+      Profile.placed("trail", res.place);
       if (res.place) renderPhoto(res.place);
     } catch (e) {
       status("Не вдалося зберегти результат 😕");
@@ -129,7 +133,7 @@
               (r) => `
             <li class="leaders__row${r.me ? " is-me" : ""}">
               <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-              <span class="leaders__name">${escapeHtml(r.name)}${r.me ? " <small>(ти)</small>" : ""}</span>
+              <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}</span>
               <span></span>
               <span class="leaders__km">${formatTime(r.time)}</span>
             </li>`

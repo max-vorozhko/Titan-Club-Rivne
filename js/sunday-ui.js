@@ -42,6 +42,7 @@
       $("sun-res-pace").textContent = formatTime(result.pace);
       $("sun-res-stumbles").textContent = result.stumbles;
       $("sun-again").textContent = `Ще раз · ${result.dist} км`;
+      Profile.record({ mode: "sunday", dist: result.dist, time: result.time });
       renderPhoto(null);
       submit(result);
       setTimeout(() => ($("sun-finish").hidden = false), 400);
@@ -61,15 +62,17 @@
     $("sun-week").textContent = `Тиждень №${week.number} · траса оновлюється щопонеділка`;
     $("sun-route").innerHTML = `<b>${escapeHtml(week.theme.name)}:</b> ${["КТС", ...week.theme.stops, "КТС"].map(escapeHtml).join(" → ")}`;
     $("sun-name").hidden = !(Leaderboard.enabled && !Leaderboard.getName());
+    Profile.renderBoostToggle($("sun-boost"));
   }
 
-  function start() {
+  async function start() {
     const typed = $("sun-name-input").value.trim();
     if (!$("sun-name").hidden && typed.length >= 2) Leaderboard.setName(typed);
     ["sun-start", "sun-finish", "sun-board", "sun-pause", "sun-share-sheet"].forEach((id) => ($(id).hidden = true));
     setPlaying(true);
     game.resize();
-    game.start(dist);
+    const boosted = await Profile.takeBoost($("sun-boost"));
+    game.start(dist, boosted);
   }
 
   let photoSeq = 0;
@@ -95,9 +98,10 @@
     if (!Leaderboard.getName()) return status("Введи ім'я на старті, щоб потрапити в рейтинг тижня");
     status("Зберігаю результат…");
     try {
-      const res = await Leaderboard.sundaySubmit({ week: result.week.id, dist: result.dist, time: result.time, stumbles: result.stumbles });
+      const res = await Leaderboard.sundaySubmit({ week: result.week.id, dist: result.dist, time: result.time, stumbles: result.stumbles, boost: result.boost });
       status(res.place ? `📊 #${res.place} цього тижня на ${result.dist} км (кращий час ${formatTime(res.best)})` : "Результат збережено");
       lastPlace = res.place;
+      Profile.placed("sunday", res.place);
       if (res.place) renderPhoto(res.place);
     } catch (e) {
       status("Не вдалося зберегти результат 😕");
@@ -112,7 +116,7 @@
         (r) => `
         <li class="leaders__row${r.me ? " is-me" : ""}">
           <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-          <span class="leaders__name">${escapeHtml(r.name)}${r.me ? " <small>(ти)</small>" : ""}</span>
+          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}</span>
           <span></span>
           <span class="leaders__km">${formatTime(r.time)}</span>
         </li>`

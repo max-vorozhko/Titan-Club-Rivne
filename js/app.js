@@ -23,7 +23,7 @@
       document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("is-active", t.id === "tab-" + btn.dataset.tab));
       if (btn.dataset.tab === "game") game.resize();
       else if (btn.dataset.tab === "leaders") loadLeaders();
-      else if (btn.dataset.tab === "rewards") renderRewards();
+      else if (btn.dataset.tab === "profile") renderRewards();
     });
   });
 
@@ -70,6 +70,7 @@
       $("over-pace").textContent = result.mark;
       $("best-over").textContent = best.toFixed(2);
       $("best-start").textContent = best.toFixed(2);
+      Profile.record({ mode: "game", km: result.km });
       prepareSubmit(result);
       // Невелика пауза, щоб випадковий тап не перезапустив гру одразу
       setTimeout(() => ($("screen-over").hidden = false), 450);

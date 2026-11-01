@@ -36,7 +36,8 @@ service cloud.firestore {
 
     // Найшвидший можливий темп у грі ≈ 3:26/км (прискорення + гель), тож менше 200 с/км не буває
     function validSunday(d, km) {
-      return d.keys().hasOnly(['name', 'time', 'stumbles', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'updatedAt'])
+        && (!('boost' in d) || d.boost is bool)
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
         && d.time is int && d.time >= km * 200 && d.time <= km * 1800
         && d.stumbles is int && d.stumbles >= 0 && d.stumbles <= 1000
@@ -56,11 +57,70 @@ service cloud.firestore {
 
     // Навіть з темпом, гелем і на спуску швидше ~2:40/км не буває, тож менше 150 с/км відхиляємо
     function validTrail(d, km) {
-      return d.keys().hasOnly(['name', 'time', 'stumbles', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'updatedAt'])
+        && (!('boost' in d) || d.boost is bool)
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
         && d.time is int && d.time >= km * 150 && d.time <= km * 3600
         && d.stumbles is int && d.stumbles >= 0 && d.stumbles <= 2000
         && d.updatedAt == request.time;
+    }
+
+    // ---------- Бусти «Супер-кросівки» й промокоди ----------
+
+    // Адміністратор (генерує промокоди на сторінці admin.html) — анонімний ідентифікатор його пристрою
+    function isAdmin() {
+      return request.auth != null && request.auth.uid in ['ADMIN_UID'];
+    }
+
+    // Одноразові промокоди codes/{КОД}. Звичайні гравці не бачать і не перебирають коди:
+    // можуть лише «погасити» конкретний код, який знають, і лише разом із нарахуванням буста собі.
+    match /codes/{code} {
+      allow get, list, delete: if isAdmin();
+      allow create: if isAdmin()
+        && code.matches('^[A-Z0-9-]{6,40}$')
+        && request.resource.data.keys().hasOnly(['used', 'createdAt'])
+        && request.resource.data.used == false
+        && request.resource.data.createdAt == request.time;
+      allow update: if request.auth != null
+        && resource.data.used == false
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used', 'usedBy', 'usedAt'])
+        && request.resource.data.used == true
+        && request.resource.data.usedBy == request.auth.uid
+        && request.resource.data.usedAt == request.time
+        && getAfter(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.lastCode == code;
+    }
+
+    // Бусти гравця profiles/{uid}: +1 лише разом із погашенням нового коду, −1 — на старті забігу
+    match /profiles/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && validProfile(request.resource.data)
+        && request.resource.data.boosts == 1
+        && redeemedNow(request.resource.data.lastCode);
+      allow update: if request.auth != null && request.auth.uid == uid
+        && validProfile(request.resource.data)
+        && (
+          (request.resource.data.boosts == resource.data.boosts - 1
+            && request.resource.data.lastCode == resource.data.lastCode)
+          || (request.resource.data.boosts == resource.data.boosts + 1
+            && request.resource.data.lastCode != resource.data.lastCode
+            && redeemedNow(request.resource.data.lastCode))
+        );
+    }
+
+    function validProfile(d) {
+      return d.keys().hasOnly(['boosts', 'lastCode', 'updatedAt'])
+        && d.boosts is int && d.boosts >= 0 && d.boosts <= 100
+        && d.lastCode is string && d.lastCode.size() <= 40
+        && d.updatedAt == request.time;
+    }
+
+    // Код існує, ще не використаний і в цій самій транзакції позначається використаним цим гравцем
+    function redeemedNow(code) {
+      return code.size() >= 6
+        && exists(/databases/$(database)/documents/codes/$(code))
+        && get(/databases/$(database)/documents/codes/$(code)).data.used == false
+        && getAfter(/databases/$(database)/documents/codes/$(code)).data.usedBy == request.auth.uid;
     }
 
     function validScore(d) {

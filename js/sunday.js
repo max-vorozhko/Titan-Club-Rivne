@@ -51,6 +51,8 @@
   const SHORTS = ["#33333a", "#1f3b73", "#2d5a3d", "#5b2a6e", "#444"];
 
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const { drawPerson } = window.Avatar;
+  const BOOST = 1.01; // «Супер-кросівки»: ≈ −3,5 с/км при темпі 6:00
 
   // ---------- Тиждень і траса ----------
 
@@ -140,56 +142,10 @@
 
   // ---------- Малювання (спільне для гри й фото) ----------
 
-  // Бігун «паличками»; s — масштаб, swing — фаза бігу (null — стоїть)
-  function drawPerson(c, x, y, s, look, swing, wave) {
-    const shirt = look.shirt || css("--brand");
-    const hip = y - 28 * s;
-    const shoulder = y - 50 * s;
-    c.lineCap = "round";
-    c.lineWidth = 7 * s;
-    c.strokeStyle = look.shorts;
-    if (swing === null) {
-      line(c, x - 2 * s, hip, x - 6 * s, y);
-      line(c, x + 2 * s, hip, x + 6 * s, y);
-    } else {
-      limb(c, x, hip, -swing, 14 * s, 15 * s);
-      limb(c, x, hip, swing, 14 * s, 15 * s);
-    }
-    c.strokeStyle = shirt;
-    c.lineWidth = 13 * s;
-    line(c, x, hip, x + (swing === null ? 0 : 3 * s), shoulder);
-    c.lineWidth = 6 * s;
-    c.strokeStyle = look.skin;
-    if (swing === null) {
-      line(c, x - 4 * s, shoulder + 4 * s, x - 10 * s, hip + 4 * s);
-      if (wave) line(c, x + 4 * s, shoulder + 4 * s, x + 14 * s, shoulder - 16 * s);
-      else line(c, x + 4 * s, shoulder + 4 * s, x + 10 * s, hip + 4 * s);
-    } else {
-      limb(c, x + 2 * s, shoulder + 4 * s, swing, 12 * s, 11 * s);
-      limb(c, x + 2 * s, shoulder + 4 * s, -swing, 12 * s, 11 * s);
-    }
-    c.fillStyle = look.skin;
-    c.beginPath();
-    c.arc(x + (swing === null ? 0 : 5 * s), shoulder - 11 * s, 9 * s, 0, Math.PI * 2);
-    c.fill();
-  }
-
   function line(c, x1, y1, x2, y2) {
     c.beginPath();
     c.moveTo(x1, y1);
     c.lineTo(x2, y2);
-    c.stroke();
-  }
-
-  function limb(c, x, y, swing, l1, l2) {
-    const a1 = Math.PI / 2 + swing * 0.8;
-    const kx = x + Math.cos(a1) * l1;
-    const ky = y + Math.sin(a1) * l1;
-    const a2 = a1 + (swing > 0 ? 0.2 : 0.9);
-    c.beginPath();
-    c.moveTo(x, y);
-    c.lineTo(kx, ky);
-    c.lineTo(kx + Math.cos(a2) * l2, ky + Math.sin(a2) * l2);
     c.stroke();
   }
 
@@ -302,6 +258,7 @@
       this.nextBubble = 3;
       this.stopIndex = 0;
       this.finished = false;
+      this.boosted = false;
       this.draw();
     }
 
@@ -321,8 +278,9 @@
       this.draw();
     }
 
-    start(distKm) {
+    start(distKm, boosted) {
       this.setup(weekInfo(0), distKm);
+      this.boosted = !!boosted;
       this.running = true;
       this.paused = false;
       this.last = performance.now();
@@ -382,6 +340,7 @@
       if (this.gel > 0) mult *= GEL;
       if (this.stumble > 0) mult *= STUMBLE;
       if (this.energy <= 0) mult *= TIRED;
+      if (this.boosted) mult *= BOOST;
       p.speed += (GROUP_SPEED * mult - p.speed) * Math.min(1, dt * 4);
       p.pos += p.speed * dt;
       this.groupPos = Math.min(this.track.end + 400, this.groupPos + GROUP_SPEED * dt);
@@ -486,6 +445,7 @@
         pace: time / this.dist,
         stumbles: this.stumbles,
         withGroup: this.withGroup,
+        boost: this.boosted,
       });
     }
 
@@ -769,7 +729,7 @@
         c.fill();
       }
       const swing = p.y < GROUND ? 0.6 : Math.sin(p.phase);
-      drawPerson(c, PLAYER_X, p.y, 1, { shirt: css("--brand"), shorts: css("--ink"), skin: css("--brand") }, swing);
+      drawPerson(c, PLAYER_X, p.y, 1, Profile.look(this.boosted), swing);
       c.font = "700 12px Montserrat, sans-serif";
       c.fillStyle = css("--brand");
       c.textAlign = "center";
@@ -839,7 +799,7 @@
       const x = 130 + i * 136;
       drawPerson(c, x, 1190, 2.6, m, null, i % 3 === 0);
     });
-    const me = { shirt: brand, shorts: ink, skin: brand };
+    const me = Profile.look(result.boost);
     const frontXs = [150, 300, 450, 630, 780, 930];
     front.forEach((m, i) => drawPerson(c, frontXs[i], 1300, 3, m, null, i % 2 === 1));
     c.fillStyle = "rgba(248,90,10,.18)";

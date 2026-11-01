@@ -134,7 +134,10 @@
       best = prev.time;
       if (prev.name !== name) await ref.set({ ...prev, name, updatedAt: stamp });
     } else {
-      await ref.set({ name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), updatedAt: stamp });
+      // boost пишемо лише для забігів із бустом: звичайні результати сумісні й зі старими правилами
+      const doc = { name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), updatedAt: stamp };
+      if (run.boost) doc.boost = true;
+      await ref.set(doc);
     }
     const faster = await countOf(runs.where("time", "<", best));
     return { best, place: faster === null ? null : faster + 1 };
@@ -143,7 +146,7 @@
   async function sundayTop(week, dist, limit) {
     const { db, uid } = await connect();
     const snap = await sundayRuns(db, week, dist).orderBy("time").limit(limit || TOP_N).get();
-    return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, me: d.id === uid }));
+    return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, boost: !!d.data().boost, me: d.id === uid }));
   }
 
   // ---------- Трейл: турнірна таблиця trail/{7k|13k|26k}/runs/{uid}, найкращий час за весь час ----------
@@ -165,7 +168,10 @@
       best = prev.time;
       if (prev.name !== name) await ref.set({ ...prev, name, updatedAt: stamp });
     } else {
-      await ref.set({ name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), updatedAt: stamp });
+      // boost пишемо лише для забігів із бустом: звичайні результати сумісні й зі старими правилами
+      const doc = { name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), updatedAt: stamp };
+      if (run.boost) doc.boost = true;
+      await ref.set(doc);
     }
     const faster = await countOf(runs.where("time", "<", best));
     return { best, place: faster === null ? null : faster + 1 };
@@ -174,11 +180,12 @@
   async function trailTop(dist, limit) {
     const { db, uid } = await connect();
     const snap = await trailRuns(db, dist).orderBy("time").limit(limit || TOP_N).get();
-    return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, me: d.id === uid }));
+    return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, boost: !!d.data().boost, me: d.id === uid }));
   }
 
   window.Leaderboard = {
     enabled,
+    connect,
     getName: () => read(NAME_KEY),
     setName: (name) => write(NAME_KEY, name.trim().slice(0, 20)),
     top,

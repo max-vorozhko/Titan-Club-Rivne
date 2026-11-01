@@ -1,7 +1,9 @@
 // «Трейл»: підготовка до Житомирських вертикалей — забіг лісовою стежкою з підйомами й спусками.
 // Траси 7, 13 і 26 км фіксовані (однакові для всіх), тож рейтинг — найкращий час за весь час.
 (function () {
-  const { drawPerson, formatTime, rng, hash } = window.SundayRun;
+  const { formatTime, rng, hash } = window.SundayRun;
+  const { drawPerson } = window.Avatar;
+  const BOOST = 1.01; // «Супер-кросівки»: ≈ −3,5 с/км по рівному
 
   const H = 400;
   const BASE_Y = H - 110;            // де на екрані «земля» під бігуном
@@ -100,6 +102,7 @@
       this.climbed = 0;
       this.sprinting = false;
       this.finished = false;
+      this.boosted = false;
       this.camH = 0;
       this.draw();
     }
@@ -119,8 +122,9 @@
       this.draw();
     }
 
-    start(distKm) {
+    start(distKm, boosted) {
       this.setup(distKm);
+      this.boosted = !!boosted;
       this.running = true;
       this.paused = false;
       this.last = performance.now();
@@ -192,6 +196,7 @@
       if (this.gel > 0) mult *= GEL;
       if (this.stumble > 0) mult *= STUMBLE;
       if (this.energy <= 0) mult *= EXHAUSTED;
+      if (this.boosted) mult *= BOOST;
       p.speed += (SPEED * mult - p.speed) * Math.min(1, dt * 4);
       const before = this.track.profile.height(p.pos / PX_PER_KM);
       p.pos += p.speed * dt;
@@ -277,7 +282,7 @@
       this.finished = true;
       const time = Math.round(this.time * TIME_SCALE);
       this.draw();
-      this.ui.finish({ dist: this.dist, time, pace: time / this.dist, stumbles: this.stumbles, dplus: this.track.profile.dplus });
+      this.ui.finish({ dist: this.dist, time, pace: time / this.dist, stumbles: this.stumbles, dplus: this.track.profile.dplus, boost: this.boosted });
     }
 
     // ---------- Малювання ----------
@@ -368,7 +373,7 @@
         c.fill();
       }
       const swing = p.alt > 0 ? 0.6 : Math.sin(p.phase) * (this.energy <= 0 ? 0.5 : 1);
-      drawPerson(c, PLAYER_X, py, 1, { shirt: css("--brand"), shorts: css("--ink"), skin: css("--brand") }, swing);
+      drawPerson(c, PLAYER_X, py, 1, Profile.look(this.boosted), swing);
     }
 
     // Пасма пагорбів із гранітними виступами; parallax — частка руху камери
@@ -606,7 +611,7 @@
     c.fillRect(0, 1220, W, 300);
     c.fillStyle = "#3f8a4a";
     c.fillRect(0, 1215, W, 14);
-    drawPerson(c, 760, 1225, 4, { shirt: brand, shorts: ink, skin: brand }, null, true);
+    drawPerson(c, 760, 1225, 4, Profile.look(result.boost), null, true);
 
     c.textAlign = "center";
     c.fillStyle = ink;
