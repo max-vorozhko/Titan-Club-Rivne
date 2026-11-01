@@ -1,5 +1,7 @@
 # Titan Club Rivne — Titan Run
 
+> Продовжуєте роботу в новому діалозі? Почніть з [`docs/HANDOFF.md`](docs/HANDOFF.md).
+
 Інтерактивна гра й бонусна програма для бігового клубу [Titan Club Rivne](https://www.instagram.com/titan.club.rivne).
 
 Статичний сайт без збірки: HTML + CSS + JS. Працює на телефоні й комп'ютері, легко публікується на GitHub Pages.
