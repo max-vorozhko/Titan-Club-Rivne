@@ -9,6 +9,7 @@
   let boardDist = DISTANCES[0];
   let lastResult = null;
   let lastPhoto = null;
+  let lastPlace = null;
   let photoSeq = 0;
   let toastTimer;
 
@@ -36,6 +37,7 @@
     },
     finish(result) {
       lastResult = result;
+      lastPlace = null;
       setPlaying(false);
       $("trail-toast").classList.remove("is-visible");
       $("trail-res-time").textContent = formatTime(result.time);
@@ -67,7 +69,7 @@
   function start() {
     const typed = $("trail-name-input").value.trim();
     if (!$("trail-name").hidden && typed.length >= 2) Leaderboard.setName(typed);
-    ["trail-start", "trail-finish", "trail-board", "trail-pause"].forEach((id) => ($(id).hidden = true));
+    ["trail-start", "trail-finish", "trail-board", "trail-pause", "trail-share-sheet"].forEach((id) => ($(id).hidden = true));
     setPlaying(true);
     game.resize();
     drawProfile($("trail-profile"), dist);
@@ -75,7 +77,7 @@
   }
 
   function backToStart() {
-    ["trail-finish", "trail-board", "trail-pause"].forEach((id) => ($(id).hidden = true));
+    ["trail-finish", "trail-board", "trail-pause", "trail-share-sheet"].forEach((id) => ($(id).hidden = true));
     renderStart();
     $("trail-start").hidden = false;
   }
@@ -104,6 +106,7 @@
     try {
       const res = await Leaderboard.trailSubmit({ dist: result.dist, time: result.time, stumbles: result.stumbles });
       status(res.place ? `📊 #${res.place} у таблиці на ${result.dist} км (кращий час ${formatTime(res.best)})` : "Результат збережено");
+      lastPlace = res.place;
       if (res.place) renderPhoto(res.place);
     } catch (e) {
       status("Не вдалося зберегти результат 😕");
@@ -176,12 +179,16 @@
     game.resume();
   });
 
-  $("trail-share").addEventListener("click", async () => {
-    if (!lastPhoto || !lastResult) return;
-    const text = `Підготовка до Житомирських вертикалей: трейл ${lastResult.dist} км за ${formatTime(lastResult.time)} 🏔️🏃`;
-    const how = await Share.shareBlob(lastPhoto, `titan-trail-${lastResult.dist}k.png`, text);
-    if (how === "downloaded") ui.toast("Фото збережено 📸");
-  });
+  Share.attachSheet($("trail-share"), $("trail-share-sheet"), () => {
+    if (!lastResult) return null;
+    const r = lastResult;
+    const place = lastPlace ? ` — #${lastPlace} у таблиці` : "";
+    return {
+      text: `Підготовка до Житомирських вертикалей: трейл ${r.dist} км (D+ ${r.dplus} м) за ${formatTime(r.time)}${place} 🏔️🏃 А ти?`,
+      photo: async () => lastPhoto || storyImage(r, Leaderboard.getName(), lastPlace),
+      filename: `titan-trail-${r.dist}k.png`,
+    };
+  }, ui.toast);
 
   $("trail-canvas").addEventListener("pointerdown", (e) => {
     e.preventDefault();

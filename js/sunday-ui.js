@@ -9,6 +9,7 @@
   let boardDist = 5;
   let lastResult = null;
   let lastPhoto = null;
+  let lastPlace = null;
   let toastTimer;
 
   const escapeHtml = (s) =>
@@ -34,6 +35,7 @@
     },
     finish(result) {
       lastResult = result;
+      lastPlace = null;
       setPlaying(false);
       $("sun-toast").classList.remove("is-visible");
       $("sun-res-time").textContent = formatTime(result.time);
@@ -64,7 +66,7 @@
   function start() {
     const typed = $("sun-name-input").value.trim();
     if (!$("sun-name").hidden && typed.length >= 2) Leaderboard.setName(typed);
-    ["sun-start", "sun-finish", "sun-board", "sun-pause"].forEach((id) => ($(id).hidden = true));
+    ["sun-start", "sun-finish", "sun-board", "sun-pause", "sun-share-sheet"].forEach((id) => ($(id).hidden = true));
     setPlaying(true);
     game.resize();
     game.start(dist);
@@ -95,6 +97,7 @@
     try {
       const res = await Leaderboard.sundaySubmit({ week: result.week.id, dist: result.dist, time: result.time, stumbles: result.stumbles });
       status(res.place ? `📊 #${res.place} цього тижня на ${result.dist} км (кращий час ${formatTime(res.best)})` : "Результат збережено");
+      lastPlace = res.place;
       if (res.place) renderPhoto(res.place);
     } catch (e) {
       status("Не вдалося зберегти результат 😕");
@@ -177,7 +180,7 @@
   $("sun-go").addEventListener("click", start);
   // «Вибір дистанції» повертає на старт; «Ще раз» перезапускає ту саму дистанцію
   function backToStart() {
-    ["sun-finish", "sun-board", "sun-pause"].forEach((id) => ($(id).hidden = true));
+    ["sun-finish", "sun-board", "sun-pause", "sun-share-sheet"].forEach((id) => ($(id).hidden = true));
     renderStart();
     $("sun-start").hidden = false;
   }
@@ -196,12 +199,16 @@
     game.resume();
   });
 
-  $("sun-share").addEventListener("click", async () => {
-    if (!lastPhoto || !lastResult) return;
-    const text = `Недільна пробіжка Titan Club: ${lastResult.dist} км за ${formatTime(lastResult.time)} 🏃☕`;
-    const how = await Share.shareBlob(lastPhoto, `titan-sunday-${lastResult.week.id}-${lastResult.dist}k.png`, text);
-    if (how === "downloaded") ui.toast("Фото збережено 📸");
-  });
+  Share.attachSheet($("sun-share"), $("sun-share-sheet"), () => {
+    if (!lastResult) return null;
+    const r = lastResult;
+    const place = lastPlace ? ` — #${lastPlace} цього тижня` : "";
+    return {
+      text: `Недільна пробіжка Titan Club: ${r.dist} км за ${formatTime(r.time)} (темп ${formatTime(r.pace)}/км)${place} 🏃☕ А ти?`,
+      photo: async () => lastPhoto || groupPhoto(r, Leaderboard.getName(), lastPlace),
+      filename: `titan-sunday-${r.week.id}-${r.dist}k.png`,
+    };
+  }, ui.toast);
 
   // Стрибок — тап по полю або кнопка; темп — утримання кнопки
   $("sun-canvas").addEventListener("pointerdown", (e) => {

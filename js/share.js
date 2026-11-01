@@ -11,7 +11,10 @@
 
   // Посилання «поділитися» кожної соцмережі (відкриваються в новій вкладці або в застосунку)
   function links(result) {
-    const text = message(result);
+    return linksForText(message(result));
+  }
+
+  function linksForText(text) {
     return {
       telegram: `https://t.me/share/url?url=${enc(GAME_URL)}&text=${enc(text)}`,
       viber: `viber://forward?text=${enc(text + " " + GAME_URL)}`,
@@ -139,6 +142,53 @@
     }
   }
 
+  // Меню «Поділитись» для «Неділі» й «Трейлу»: ті самі соцмережі, що й в основному режимі.
+  // provider() повертає { text, photo: () => Promise<Blob>, filename } або null, якщо ділитись ще нічим.
+  function attachSheet(toggleBtn, sheet, provider, toast) {
+    sheet.innerHTML = `
+      <div class="share-sheet__grid">
+        <a class="share-btn share-btn--tg" data-net="telegram" target="_blank" rel="noopener">Telegram</a>
+        <a class="share-btn share-btn--viber" data-net="viber">Viber</a>
+        <a class="share-btn share-btn--wa" data-net="whatsapp" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="share-btn share-btn--fb" data-net="facebook" target="_blank" rel="noopener">Facebook</a>
+        <a class="share-btn share-btn--x" data-net="x" target="_blank" rel="noopener">X</a>
+        <button class="share-btn share-btn--ig" data-act="story" type="button">Instagram сторіс</button>
+        <button class="share-btn" data-act="copy" type="button">Копіювати</button>
+        ${navigator.share ? '<button class="share-btn" data-act="more" type="button">Ще…</button>' : ""}
+      </div>`;
+
+    toggleBtn.addEventListener("click", () => {
+      if (!sheet.hidden) {
+        sheet.hidden = true;
+        return;
+      }
+      const d = provider();
+      if (!d) return;
+      const l = linksForText(d.text);
+      sheet.querySelectorAll("[data-net]").forEach((a) => (a.href = l[a.dataset.net]));
+      sheet.hidden = false;
+    });
+
+    sheet.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-act]");
+      const d = btn && provider();
+      if (!d) return;
+      if (btn.dataset.act === "copy") {
+        toast((await copy(`${d.text} ${GAME_URL}`)) ? "Скопійовано! Встав у чат 👍" : "Не вдалося скопіювати 😕");
+      } else if (btn.dataset.act === "more") {
+        navigator.share({ title: "Titan Run", text: d.text, url: GAME_URL }).catch(() => {});
+      } else {
+        toast("Готую картинку…");
+        try {
+          const how = await shareBlob(await d.photo(), d.filename, d.text);
+          if (how === "downloaded") toast("Картинку збережено — додай її в сторіс 📸");
+        } catch (err) {
+          toast("Не вдалося створити картинку 😕");
+        }
+      }
+    });
+  }
+
   window.Share = {
     url: GAME_URL,
     hasNative: !!navigator.share,
@@ -149,5 +199,7 @@
     shareImage,
     shareBlob,
     storyImage,
+    linksForText,
+    attachSheet,
   };
 })();
