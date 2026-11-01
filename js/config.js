@@ -14,6 +14,7 @@ window.TITAN_CONFIG = Object.assign(
     goatcounter: "titan-run",
     // Донат за «Супер-кросівки»: посилання на банку Monobank і де отримати промокод
     donateUrl: "",
+    boostPrice: 30, // грн за одні «Супер-кросівки»
     promoContact: "",
     // Публічна адреса гри, якою діляться гравці
     shareUrl: "https://max-vorozhko.github.io/Titan-Club-Rivne/",

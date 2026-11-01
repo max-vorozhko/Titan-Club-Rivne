@@ -96,6 +96,7 @@
     const link = $("profile-donate");
     link.hidden = !cfg.donateUrl;
     if (cfg.donateUrl) link.href = cfg.donateUrl;
+    link.textContent = `Задонатити ${cfg.boostPrice || 30} грн на банку`;
     const contact = cfg.promoContact ? ` і напиши ${cfg.promoContact}` : "";
     $("profile-donate-hint").textContent = cfg.donateUrl
       ? `У коментарі до донату вкажи своє ім'я з гри${contact} — отримаєш одноразовий промокод.`
