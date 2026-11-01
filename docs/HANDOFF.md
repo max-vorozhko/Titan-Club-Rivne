@@ -3,7 +3,7 @@
 Цей файл — «передача справ» для нового діалогу з Claude (або іншого розробника).
 Почни новий діалог фразою: **«Прочитай docs/HANDOFF.md у репозиторії max-vorozhko/Titan-Club-Rivne і продовжуємо роботу над грою»**.
 
-Стан на 1 листопада 2026 (версія файлів `?v=15`).
+Стан на 1 листопада 2026 (версія файлів `?v=16`).
 
 ---
 
@@ -43,6 +43,7 @@ js/sunday.js          — «Неділя»: тиждень/траса, груп�
 js/sunday-ui.js       — UI вкладки «Неділя»
 js/trail.js           — «Трейл»: рельєф, перешкоди, профіль висот, картинка фінішу
 js/trail-ui.js        — UI вкладки «Трейл»
+js/analytics.js       — статистика GoatCounter (лише на github.io): перегляди + події вкладок, стартів і «Поділитись»
 js/rewards.js         — рівні бонусів
 js/attendance.js      — заготовка відміток присутності (НЕ підключена в index.html)
 assets/logo.png       — логотип клубу (прозорий PNG, вирізаний з офіційного лого)
@@ -84,7 +85,7 @@ README.md             — опис для людей
 ## 7. Процес релізу (як ми працюємо)
 
 1. Робоча гілка Claude: `claude/titan-club-running-game-5n9nm4`. Після злиття PR гілку перезапускаємо від свіжого `main` (`git fetch origin main && git checkout -B <гілка> origin/main`).
-2. **Кожен реліз збільшуємо `?v=N`** у всіх `<script>`/`<link>` в `index.html` (зараз 15) — інакше браузери беруть старі файли з кешу.
+2. **Кожен реліз збільшуємо `?v=N`** у всіх `<script>`/`<link>` в `index.html` (зараз 16) — інакше браузери беруть старі файли з кешу.
 3. Коміти з поясненням «чому»; PR українською з розділами «Зміни» і «Перевірка».
 4. Якщо змінюється `firestore.rules`: **спершу власник публікує правила, потім зливаємо PR** (інакше нова таблиця не працює). Після публікації перевіряємо REST-запитом (див. вище).
 5. Злиття PR → GitHub Pages сам публікує за 1–2 хв (workflow «pages build and deployment»). Гравцям іноді треба перевідкрити вкладку (кеш до 10 хв).
@@ -99,6 +100,12 @@ README.md             — опис для людей
 - Firebase локально: `npm i firebase-tools@14 @firebase/rules-unit-testing@4 firebase@11` (у scratchpad), `firebase emulators:start --only auth,firestore --project demo-titan`; конфіг гри `{ firebase: {apiKey:'demo-key', projectId:'demo-titan', authDomain:'x'}, emulator: true }`; запити до jsDelivr підміняли локальними файлами SDK через `context.route`.
 - Тести правил: `@firebase/rules-unit-testing` — 52 сценарії (scores 16, sunday 18, trail 18), усі проходили.
 - Мережа середовища Claude не пускає на github.io, Google Maps і Google Drive-лінки напряму; Firestore/Identity Toolkit REST — доступні.
+
+## 8а. Статистика відвідувань
+
+- GoatCounter, без cookie. Код сайту — `goatcounter` у `js/config.js` (порожньо = вимкнено).
+- Події: `tab-*` (вкладки), `run-game`, `run-sunday-5k|10k`, `run-trail-7k|13k|26k`, `share-<режим>-<куди>`.
+- Кількість гравців у рейтингах можна порахувати публічним REST-запитом до Firestore (див. розділ 6).
 
 ## 9. Ключові константи балансу
 

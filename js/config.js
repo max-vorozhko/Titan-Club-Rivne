@@ -9,6 +9,9 @@ window.TITAN_CONFIG = Object.assign(
       "Коля кум", "Вадік кум", "Макс", "Паша", "Іра", "Настя", "Таня", "Люда",
       "Саша йог", "Марина", "Ілона", "Віталік", "Микола",
     ],
+    // Код сайту в GoatCounter (статистика відвідувань без cookie): https://КОД.goatcounter.com
+    // Порожній рядок — статистика вимкнена.
+    goatcounter: "",
     // Публічна адреса гри, якою діляться гравці
     shareUrl: "https://max-vorozhko.github.io/Titan-Club-Rivne/",
     firebase: {
