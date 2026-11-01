@@ -83,7 +83,8 @@ main { flex: 1; display: flex; min-height: 0; }
   background: var(--brand); color: #fff; font: 700 18px var(--font-display); letter-spacing: .5px;
   text-transform: uppercase; padding: 8px 20px;
   border-radius: 999px; opacity: 0; transition: opacity .25s, transform .25s;
-  pointer-events: none; white-space: nowrap;
+  pointer-events: none; text-align: center; line-height: 1.2;
+  width: max-content; max-width: calc(100% - 32px);
   z-index: 10; /* поверх екранів старту й результату */
 }
 .toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
