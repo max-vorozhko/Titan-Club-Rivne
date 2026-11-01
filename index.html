@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
   <header class="topbar">
@@ -20,6 +20,7 @@
     <nav class="tabs" role="tablist">
       <button class="tabs__btn is-active" data-tab="game" role="tab">Гра</button>
       <button class="tabs__btn" data-tab="sunday" role="tab">Неділя</button>
+      <button class="tabs__btn" data-tab="trail" role="tab">Трейл</button>
       <button class="tabs__btn" data-tab="leaders" role="tab">Рейтинг</button>
       <button class="tabs__btn" data-tab="rewards" role="tab">Бонуси</button>
     </nav>
@@ -168,6 +169,87 @@
       </div>
     </section>
 
+    <!-- ТРЕЙЛ -->
+    <section id="tab-trail" class="tab">
+      <div class="game">
+        <canvas id="trail-canvas"></canvas>
+
+        <div class="hud sun-hud" id="trail-hud" hidden>
+          <div class="sun-hud__row">
+            <div class="hud__dist"><span id="trail-km">0.00</span><small> / <span id="trail-dist">7</span> км</small></div>
+            <div class="sun-hud__time"><span id="trail-time">0:00</span><small id="trail-pace"></small></div>
+          </div>
+          <div class="hud__energy"><div class="hud__energy-fill" id="trail-energy"></div></div>
+          <div class="trail-profile">
+            <canvas id="trail-profile"></canvas>
+            <span class="trail-profile__marker" id="trail-marker"></span>
+          </div>
+          <div class="sun-hud__group" id="trail-climb"></div>
+        </div>
+        <div class="toast" id="trail-toast"></div>
+
+        <div class="sun-controls" id="trail-controls" hidden>
+          <button class="sun-ctrl sun-ctrl--sprint" id="trail-sprint" type="button">⚡ Темп</button>
+          <button class="sun-ctrl sun-ctrl--jump" id="trail-jump" type="button">⬆ Стрибок</button>
+        </div>
+
+        <div class="overlay" id="trail-start">
+          <span class="badge">🏔️ Трейл</span>
+          <h1 class="sun-title trail-title">ПІДГОТОВКА ДО <span>ЖИТОМИРСЬКИХ ВЕРТИКАЛЕЙ</span></h1>
+          <p class="overlay__lead">Лісова стежка, гранітні скелі, підйоми й спуски. Розподіляй сили: угору важко, униз — швидко, а на пунктах харчування сили відновлюються 🍌</p>
+          <ul class="howto">
+            <li><b>⬆ Стрибок</b> — тап, Пробіл або ↑ (брили й дерева — подвійним)</li>
+            <li><b>⚡ Темп</b> — утримуй кнопку або → (на підйомах дуже дорого)</li>
+            <li>Сили закінчились — переходиш на крок 🚶</li>
+          </ul>
+          <div class="seg seg--trail" id="trail-dist-pick">
+            <button class="seg__btn is-active" data-dist="7" type="button">7 км</button>
+            <button class="seg__btn" data-dist="13" type="button">13 км</button>
+            <button class="seg__btn" data-dist="26" type="button">26 км</button>
+          </div>
+          <div class="start-name" id="trail-name" hidden>
+            <input class="lb-form__input" id="trail-name-input" maxlength="20" placeholder="Твоє ім'я для таблиці" autocomplete="nickname">
+          </div>
+          <button class="btn btn--primary" id="trail-go">На старт!</button>
+          <button class="link" id="trail-open-board" type="button">🏆 Турнірна таблиця</button>
+        </div>
+
+        <div class="overlay" id="trail-finish" hidden>
+          <h2>Фініш! 🏔️</h2>
+          <img class="sun-photo" id="trail-photo" alt="Результат трейлу">
+          <div class="result">
+            <div><span class="result__val" id="trail-res-time">0:00</span><span class="result__lbl">час</span></div>
+            <div><span class="result__val" id="trail-res-pace">—</span><span class="result__lbl">темп /км</span></div>
+            <div><span class="result__val" id="trail-res-dplus">0</span><span class="result__lbl">D+ м</span></div>
+          </div>
+          <p class="lb-status" id="trail-status" hidden></p>
+          <div class="overlay__actions">
+            <button class="btn btn--primary" id="trail-again">Ще раз</button>
+            <button class="btn btn--ghost" id="trail-pick">Вибір дистанції</button>
+          </div>
+          <button class="btn btn--ghost" id="trail-share">Поділитись фото</button>
+          <button class="link" id="trail-finish-board" type="button">🏆 Турнірна таблиця</button>
+        </div>
+
+        <div class="overlay" id="trail-pause" hidden>
+          <h2>Пауза</h2>
+          <button class="btn btn--primary" id="trail-resume">Продовжити</button>
+        </div>
+
+        <div class="overlay sun-board" id="trail-board" hidden>
+          <h2>Турнірна таблиця</h2>
+          <p class="muted">Підготовка до Житомирських вертикалей · найкращий час</p>
+          <div class="seg" id="trail-board-dist">
+            <button class="seg__btn is-active" data-dist="7" type="button">7 км</button>
+            <button class="seg__btn" data-dist="13" type="button">13 км</button>
+            <button class="seg__btn" data-dist="26" type="button">26 км</button>
+          </div>
+          <ol class="leaders" id="trail-board-list"></ol>
+          <button class="btn btn--ghost" id="trail-board-close" type="button">Назад</button>
+        </div>
+      </div>
+    </section>
+
     <!-- РЕЙТИНГ -->
     <section id="tab-leaders" class="tab">
       <div class="panel">
@@ -200,13 +282,15 @@
     <span class="footer__credit">Powered by Max Vorozhko</span>
   </footer>
 
-  <script src="js/config.js?v=11"></script>
-  <script src="js/leaderboard.js?v=11"></script>
-  <script src="js/share.js?v=11"></script>
-  <script src="js/rewards.js?v=11"></script>
-  <script src="js/game.js?v=11"></script>
-  <script src="js/app.js?v=11"></script>
-  <script src="js/sunday.js?v=11"></script>
-  <script src="js/sunday-ui.js?v=11"></script>
+  <script src="js/config.js?v=13"></script>
+  <script src="js/leaderboard.js?v=13"></script>
+  <script src="js/share.js?v=13"></script>
+  <script src="js/rewards.js?v=13"></script>
+  <script src="js/game.js?v=13"></script>
+  <script src="js/app.js?v=13"></script>
+  <script src="js/sunday.js?v=13"></script>
+  <script src="js/sunday-ui.js?v=13"></script>
+  <script src="js/trail.js?v=13"></script>
+  <script src="js/trail-ui.js?v=13"></script>
 </body>
 </html>
