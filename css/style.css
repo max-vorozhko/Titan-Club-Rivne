@@ -400,7 +400,7 @@ body.is-home .topbar { display: none; }
 .home-card--club { border-left-color: var(--ink); }
 .club-tiles { grid-template-columns: repeat(2, 1fr); margin-top: 12px; }
 .club-chart {
-  display: flex; align-items: flex-end; gap: 3px; height: 120px; padding: 8px;
+  display: flex; align-items: flex-end; gap: 2px; height: 120px; padding: 8px;
   background: var(--surface); border-radius: var(--radius);
 }
 .club-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; cursor: pointer; min-width: 0; }

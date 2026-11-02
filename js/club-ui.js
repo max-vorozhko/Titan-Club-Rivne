@@ -13,9 +13,10 @@
     return `<div class="stat"><span class="stat__val">${value}</span><span class="stat__lbl">${label}</span></div>`;
   }
 
-  // Стовпчики: скільки людей було на кожній неділі (останні 26). Тап по стовпчику показує деталі.
+  // Стовпчики: скільки людей було на кожній неділі поточного року (усі). Тап по стовпчику показує деталі.
   function chart(runs) {
-    const last = runs.slice(-26);
+    const year = runs[runs.length - 1].year;
+    const last = runs.filter((r) => r.year === year);
     const max = Math.max(1, ...last.map((r) => r.count));
     const bars = last
       .map((r) => {
@@ -27,9 +28,9 @@
     const first = last[0];
     const end = last[last.length - 1];
     return `
-      <h3 class="profile__sub">Учасників на пробіжках</h3>
+      <h3 class="profile__sub">Учасників на пробіжках · ${year}</h3>
       <div class="club-chart" id="club-chart">${bars}</div>
-      <div class="club-chart__axis"><span>Тиждень ${first.week}</span><span>Тиждень ${end.week}</span></div>
+      <div class="club-chart__axis"><span>Тиждень ${first.week}</span>${last.length > 8 ? `<span>Тиждень ${last[Math.floor(last.length / 2)].week}</span>` : ""}<span>Тиждень ${end.week}</span></div>
       <p class="club-chart__info" id="club-chart-info">Торкнись стовпчика, щоб побачити деталі</p>`;
   }
 
