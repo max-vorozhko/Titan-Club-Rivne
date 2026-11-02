@@ -10,15 +10,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=19">
+  <link rel="stylesheet" href="css/style.css?v=20">
 </head>
-<body>
+<body class="is-home">
   <header class="topbar">
     <a href="./" class="topbar__home" id="home-link" aria-label="На головну">
       <img src="assets/logo.png" alt="Titan Club Rivne" class="topbar__logo">
     </a>
     <nav class="tabs" role="tablist">
-      <button class="tabs__btn is-active" data-tab="game" role="tab">Біг</button>
+      <button class="tabs__btn" data-tab="game" role="tab">Біг</button>
       <button class="tabs__btn" data-tab="sunday" role="tab">Неділя</button>
       <button class="tabs__btn" data-tab="trail" role="tab">Трейл</button>
       <button class="tabs__btn" data-tab="leaders" role="tab">Рейтинг</button>
@@ -27,8 +27,35 @@
   </header>
 
   <main>
+    <!-- ГОЛОВНА: вибір формату гри -->
+    <section id="tab-home" class="tab is-active">
+      <div class="panel home">
+        <img src="assets/logo.png" alt="" class="home__logo">
+        <h1 class="home__title">TITAN <span>RUN</span></h1>
+        <p class="muted home__lead">Обери формат забігу</p>
+        <div class="home__cards">
+          <button class="home-card" data-go="game" type="button">
+            <span class="home-card__icon">🏃</span>
+            <span class="home-card__text"><b>Біг</b><small>Вулицями Рівного: скільки пробіжиш без зупинки</small></span>
+          </button>
+          <button class="home-card" data-go="sunday" type="button">
+            <span class="home-card__icon">☕</span>
+            <span class="home-card__text"><b>Неділя</b><small>5 або 10 км з групою клубу, рейтинг тижня</small></span>
+          </button>
+          <button class="home-card" data-go="trail" type="button">
+            <span class="home-card__icon">🏔️</span>
+            <span class="home-card__text"><b>Трейл</b><small>7, 13 або 26 км з рельєфом: підготовка до вертикалей</small></span>
+          </button>
+        </div>
+        <div class="home__more">
+          <button class="btn btn--ghost" data-go="leaders" type="button">🏆 Турнірна таблиця</button>
+          <button class="btn btn--ghost" data-go="profile" type="button">👤 Профіль</button>
+        </div>
+      </div>
+    </section>
+
     <!-- ГРА -->
-    <section id="tab-game" class="tab is-active">
+    <section id="tab-game" class="tab">
       <div class="game">
         <canvas id="game-canvas"></canvas>
 
@@ -42,19 +69,13 @@
         <div class="overlay" id="screen-start">
           <img src="assets/logo.png" alt="" class="overlay__logo">
           <h1>TITAN <span>RUN</span></h1>
-          <p class="overlay__lead">Біжи вулицями Рівного, перестрибуй перешкоди, пий воду й добігай до марафону!</p>
-          <ul class="howto">
-            <li><b>Тап / Пробіл</b> — стрибок (у повітрі можна ще раз)</li>
-            <li>💧 вода — відновлює енергію</li>
-            <li>⚡ гель — прискорення й невразливість</li>
-            <li>🪙 титан-монети — для рекорду</li>
-          </ul>
           <div class="start-name" id="start-name" hidden>
             <input class="lb-form__input" id="start-name-input" maxlength="20" placeholder="Твоє ім'я для рейтингу" autocomplete="nickname">
           </div>
           <p class="start-who" id="start-who" hidden></p>
           <button class="btn btn--primary" id="btn-start">Старт!</button>
           <p class="overlay__best">Рекорд: <span id="best-start">0.00</span> км</p>
+          <button class="link" data-help="help-game" type="button">❓ Як грати</button>
         </div>
 
         <div class="overlay" id="screen-over" hidden>
@@ -116,12 +137,6 @@
           <span class="badge" id="sun-week"></span>
           <h1 class="sun-title">НЕДІЛЬНА <span>ПРОБІЖКА</span></h1>
           <p class="sun-route-text" id="sun-route"></p>
-          <p class="overlay__lead">Біжи з групою Titan Club від КТС і назад. Разом легше: поруч з групою енергія відновлюється. На фініші — спільне фото й кава ☕</p>
-          <ul class="howto">
-            <li><b>⬆ Стрибок</b> — тап по екрану, Пробіл або ↑</li>
-            <li><b>⚡ Темп</b> — утримуй кнопку або → (швидше, але витрачає енергію)</li>
-            <li>Спіткнувся — втрачаєш час, але біжиш далі</li>
-          </ul>
           <div class="seg" id="sun-dist-pick">
             <button class="seg__btn is-active" data-dist="5" type="button">5 км</button>
             <button class="seg__btn" data-dist="10" type="button">10 км</button>
@@ -130,8 +145,12 @@
             <input class="lb-form__input" id="sun-name-input" maxlength="20" placeholder="Твоє ім'я для рейтингу" autocomplete="nickname">
           </div>
           <label class="boost-toggle" id="sun-boost" hidden><input type="checkbox"> ⚡ Взути супер-кросівки <small></small></label>
+          <button class="boost-promo" data-goto-boost type="button">⚡ Є <b>супер-кросівки</b>: ≈ −3 с/км на один забіг. Отримай за донат або промокод →</button>
           <button class="btn btn--primary" id="sun-go">Старт від КТС!</button>
-          <button class="link" id="sun-open-board" type="button">🏆 Рейтинг тижня й архів</button>
+          <div class="start-links">
+            <button class="link" data-help="help-sunday" type="button">❓ Як грати</button>
+            <button class="link" id="sun-open-board" type="button">🏆 Рейтинг тижня й архів</button>
+          </div>
         </div>
 
         <div class="overlay" id="sun-finish" hidden>
@@ -198,12 +217,6 @@
         <div class="overlay" id="trail-start">
           <span class="badge">🏔️ Трейл</span>
           <h1 class="sun-title trail-title">ПІДГОТОВКА ДО <span>ЖИТОМИРСЬКИХ ВЕРТИКАЛЕЙ</span></h1>
-          <p class="overlay__lead">Лісова стежка, гранітні скелі, підйоми й спуски. Розподіляй сили: угору важко, униз — швидко, а на пунктах харчування сили відновлюються 🍌</p>
-          <ul class="howto">
-            <li><b>⬆ Стрибок</b> — тап, Пробіл або ↑ (брили й дерева — подвійним)</li>
-            <li><b>⚡ Темп</b> — утримуй кнопку або → (на підйомах дуже дорого)</li>
-            <li>Сили закінчились — переходиш на крок 🚶</li>
-          </ul>
           <div class="seg seg--trail" id="trail-dist-pick">
             <button class="seg__btn is-active" data-dist="7" type="button">7 км</button>
             <button class="seg__btn" data-dist="13" type="button">13 км</button>
@@ -213,8 +226,12 @@
             <input class="lb-form__input" id="trail-name-input" maxlength="20" placeholder="Твоє ім'я для таблиці" autocomplete="nickname">
           </div>
           <label class="boost-toggle" id="trail-boost" hidden><input type="checkbox"> ⚡ Взути супер-кросівки <small></small></label>
+          <button class="boost-promo" data-goto-boost type="button">⚡ Є <b>супер-кросівки</b>: ≈ −3 с/км на один забіг. Отримай за донат або промокод →</button>
           <button class="btn btn--primary" id="trail-go">На старт!</button>
-          <button class="link" id="trail-open-board" type="button">🏆 Турнірна таблиця</button>
+          <div class="start-links">
+            <button class="link" data-help="help-trail" type="button">❓ Як грати</button>
+            <button class="link" id="trail-open-board" type="button">🏆 Турнірна таблиця</button>
+          </div>
         </div>
 
         <div class="overlay" id="trail-finish" hidden>
@@ -258,10 +275,17 @@
     <section id="tab-leaders" class="tab">
       <div class="panel">
         <span class="badge" id="lb-wip" hidden>🚧 В розробці</span>
-        <h2>Рейтинг клубу</h2>
+        <h2>Турнірна таблиця</h2>
+        <div class="seg lb-modes" id="lb-mode">
+          <button class="seg__btn is-active" data-mode="game" type="button">🏃 Біг</button>
+          <button class="seg__btn" data-mode="sunday" type="button">☕ Неділя</button>
+          <button class="seg__btn" data-mode="trail" type="button">🏔️ Трейл</button>
+        </div>
+        <div class="seg lb-dists" id="lb-dist" hidden></div>
         <p class="muted" id="lb-lead">Найдовші забіги в Titan Run серед учасників Titan Club Rivne.</p>
         <p class="lb-me" id="lb-me" hidden></p>
         <ol class="leaders" id="lb-list"></ol>
+        <button class="link lb-archive" id="lb-archive" type="button" hidden>📜 Архів переможців тижнів</button>
         <button class="btn btn--ghost btn--wide" id="lb-refresh" hidden>Оновити</button>
       </div>
     </section>
@@ -278,25 +302,35 @@
           </div>
         </div>
 
-        <h3 class="profile__sub">Гардероб</h3>
-        <div id="profile-wardrobe"></div>
-
-        <h3 class="profile__sub">Статистика</h3>
         <div class="stats" id="profile-stats"></div>
 
-        <h3 class="profile__sub">Досягнення й мерч</h3>
-        <ul class="achievements" id="profile-achievements"></ul>
+        <div class="ptabs" id="profile-tabs" role="tablist">
+          <button class="ptabs__btn is-active" data-pane="look" type="button"><span>👕</span>Вигляд</button>
+          <button class="ptabs__btn" data-pane="goals" type="button"><span>🏅</span>Ачівки й задачі</button>
+          <button class="ptabs__btn" data-pane="boost" type="button"><span>⚡</span>Буст-кросівки</button>
+        </div>
 
-        <h3 class="profile__sub">⚡ Супер-кросівки</h3>
-        <div class="boost-card">
-          <p>Буст на <b>один забіг</b> у «Неділі» чи «Трейлі»: золоті кросівки й ≈ <b>−3 с/км</b> до темпу. Результат у таблиці позначається ⚡.</p>
-          <p class="boost-card__count">У тебе: <b id="profile-boosts">0</b> шт.</p>
-          <a class="btn btn--primary btn--wide" id="profile-donate" target="_blank" rel="noopener" hidden>Задонатити 30 грн на банку</a>
-          <p class="muted small-left" id="profile-donate-hint"></p>
-          <form class="lb-form" id="profile-code-form">
-            <input class="lb-form__input" id="profile-code" maxlength="40" placeholder="Промокод" autocomplete="off" autocapitalize="characters" required>
-            <button class="btn btn--small" type="submit">Активувати</button>
-          </form>
+        <div class="ppane" id="pane-look">
+          <p class="muted small-left">Обери, у чому бігатиме твій бігун. Речі з 🔒 відкриваються за досягнення.</p>
+          <div id="profile-wardrobe"></div>
+        </div>
+
+        <div class="ppane" id="pane-goals" hidden>
+          <p class="muted small-left">Виконуй задачі й отримуй мерч для свого бігуна.</p>
+          <ul class="achievements" id="profile-achievements"></ul>
+        </div>
+
+        <div class="ppane" id="pane-boost" hidden>
+          <div class="boost-card">
+            <p>Буст на <b>один забіг</b> у «Неділі» чи «Трейлі»: золоті кросівки й ≈ <b>−3 с/км</b> до темпу. Результат у таблиці позначається ⚡.</p>
+            <p class="boost-card__count">У тебе: <b id="profile-boosts">0</b> шт.</p>
+            <a class="btn btn--primary btn--wide" id="profile-donate" target="_blank" rel="noopener" hidden>Задонатити 30 грн на банку</a>
+            <p class="muted small-left" id="profile-donate-hint"></p>
+            <form class="lb-form" id="profile-code-form">
+              <input class="lb-form__input" id="profile-code" maxlength="40" placeholder="Промокод" autocomplete="off" autocapitalize="characters" required>
+              <button class="btn btn--small" type="submit">Активувати</button>
+            </form>
+          </div>
         </div>
 
         <div class="is-wip profile__bonus">
@@ -311,25 +345,68 @@
 
   <div class="toast toast--global" id="global-toast"></div>
 
+  <!-- «Як грати»: відкриваються кнопкою ❓ на стартовому екрані режиму -->
+  <div class="modal" id="help-game" hidden role="dialog" aria-modal="true" aria-labelledby="help-game-title">
+    <div class="modal__card">
+      <h2 id="help-game-title">Як грати: Біг</h2>
+      <p>Біжи вулицями Рівного, перестрибуй перешкоди, пий воду й добігай до марафону!</p>
+      <ul class="howto">
+        <li><b>Тап / Пробіл / ↑</b> — стрибок (у повітрі можна ще раз)</li>
+        <li>💧 вода — відновлює енергію</li>
+        <li>⚡ гель — прискорення й невразливість</li>
+        <li>🪙 титан-монети — для рекорду</li>
+        <li>Шлагбауми (з 4 км) — лише подвійним стрибком</li>
+      </ul>
+      <button class="btn btn--primary" data-close type="button">Зрозуміло</button>
+    </div>
+  </div>
+
+  <div class="modal" id="help-sunday" hidden role="dialog" aria-modal="true" aria-labelledby="help-sunday-title">
+    <div class="modal__card">
+      <h2 id="help-sunday-title">Як грати: Неділя</h2>
+      <p>Біжи з групою Titan Club від КТС і назад. Разом легше: поруч з групою енергія відновлюється. На фініші — спільне фото й кава ☕</p>
+      <ul class="howto">
+        <li><b>⬆ Стрибок</b> — тап по екрану, Пробіл або ↑</li>
+        <li><b>⚡ Темп</b> — утримуй кнопку або → (швидше, але витрачає енергію)</li>
+        <li>Спіткнувся — втрачаєш час, але біжиш далі</li>
+        <li>Траса тижня однакова для всіх і змінюється щопонеділка</li>
+      </ul>
+      <button class="btn btn--primary" data-close type="button">Зрозуміло</button>
+    </div>
+  </div>
+
+  <div class="modal" id="help-trail" hidden role="dialog" aria-modal="true" aria-labelledby="help-trail-title">
+    <div class="modal__card">
+      <h2 id="help-trail-title">Як грати: Трейл</h2>
+      <p>Лісова стежка, гранітні скелі, підйоми й спуски. Розподіляй сили: угору важко, униз — швидко, а на пунктах харчування сили відновлюються 🍌</p>
+      <ul class="howto">
+        <li><b>⬆ Стрибок</b> — тап, Пробіл або ↑ (брили й дерева — подвійним)</li>
+        <li><b>⚡ Темп</b> — утримуй кнопку або → (на підйомах дуже дорого)</li>
+        <li>Сили закінчились — переходиш на крок 🚶</li>
+      </ul>
+      <button class="btn btn--primary" data-close type="button">Зрозуміло</button>
+    </div>
+  </div>
+
   <footer class="footer">
     <a href="https://www.instagram.com/titan.club.rivne" target="_blank" rel="noopener">@titan.club.rivne</a>
     <span class="footer__sep">·</span>
     <span class="footer__credit">Powered by Max Vorozhko</span>
   </footer>
 
-  <script src="js/config.js?v=19"></script>
-  <script src="js/analytics.js?v=19"></script>
-  <script src="js/leaderboard.js?v=19"></script>
-  <script src="js/share.js?v=19"></script>
-  <script src="js/avatar.js?v=19"></script>
-  <script src="js/profile.js?v=19"></script>
-  <script src="js/rewards.js?v=19"></script>
-  <script src="js/game.js?v=19"></script>
-  <script src="js/app.js?v=19"></script>
-  <script src="js/sunday.js?v=19"></script>
-  <script src="js/sunday-ui.js?v=19"></script>
-  <script src="js/trail.js?v=19"></script>
-  <script src="js/trail-ui.js?v=19"></script>
-  <script src="js/profile-ui.js?v=19"></script>
+  <script src="js/config.js?v=20"></script>
+  <script src="js/analytics.js?v=20"></script>
+  <script src="js/leaderboard.js?v=20"></script>
+  <script src="js/share.js?v=20"></script>
+  <script src="js/avatar.js?v=20"></script>
+  <script src="js/profile.js?v=20"></script>
+  <script src="js/rewards.js?v=20"></script>
+  <script src="js/game.js?v=20"></script>
+  <script src="js/app.js?v=20"></script>
+  <script src="js/sunday.js?v=20"></script>
+  <script src="js/sunday-ui.js?v=20"></script>
+  <script src="js/trail.js?v=20"></script>
+  <script src="js/trail-ui.js?v=20"></script>
+  <script src="js/profile-ui.js?v=20"></script>
 </body>
 </html>

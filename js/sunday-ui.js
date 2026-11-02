@@ -272,6 +272,7 @@
       } else pause();
     })
   );
+  document.getElementById("home-link").addEventListener("click", pause);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) pause();
   });

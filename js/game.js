@@ -43,6 +43,8 @@
 
     resize() {
       const rect = this.canvas.getBoundingClientRect();
+      // Вкладка прихована (наприклад, відкрита головна): розміру ще немає, перемалюємо при відкритті
+      if (!rect.width || !rect.height) return;
       const dpr = window.devicePixelRatio || 1;
       // На вертикальному екрані зберігаємо мінімальну ширину огляду,
       // а сцену притискаємо до низу; зверху лишається небо.
