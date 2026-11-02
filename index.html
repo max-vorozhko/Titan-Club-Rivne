@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=20">
+  <link rel="stylesheet" href="css/style.css?v=21">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -50,6 +50,10 @@
         <div class="home__more">
           <button class="btn btn--ghost" data-go="leaders" type="button">🏆 Турнірна таблиця</button>
           <button class="btn btn--ghost" data-go="profile" type="button">👤 Профіль</button>
+        </div>
+        <div class="home__links">
+          <a href="https://www.instagram.com/titan.club.rivne" target="_blank" rel="noopener">📷 Наш Instagram: <b>@titan.club.rivne</b></a>
+          <a href="https://www.instagram.com/max.vorozhko" target="_blank" rel="noopener">👨‍💻 Instagram розробника: <b>@max.vorozhko</b></a>
         </div>
       </div>
     </section>
@@ -285,7 +289,11 @@
         <p class="muted" id="lb-lead">Найдовші забіги в Titan Run серед учасників Titan Club Rivne.</p>
         <p class="lb-me" id="lb-me" hidden></p>
         <ol class="leaders" id="lb-list"></ol>
-        <button class="link lb-archive" id="lb-archive" type="button" hidden>📜 Архів переможців тижнів</button>
+        <div class="lb-past" id="lb-past" hidden>
+          <h3 class="lb-past__title" id="lb-past-title">Минулий тиждень</h3>
+          <ol class="leaders" id="lb-past-list"></ol>
+        </div>
+        <button class="link lb-archive" id="lb-archive" type="button" hidden>📜 Архів переможців тижнів →</button>
         <button class="btn btn--ghost btn--wide" id="lb-refresh" hidden>Оновити</button>
       </div>
     </section>
@@ -391,22 +399,22 @@
   <footer class="footer">
     <a href="https://www.instagram.com/titan.club.rivne" target="_blank" rel="noopener">@titan.club.rivne</a>
     <span class="footer__sep">·</span>
-    <span class="footer__credit">Powered by Max Vorozhko</span>
+    <a class="footer__credit" href="https://www.instagram.com/max.vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=20"></script>
-  <script src="js/analytics.js?v=20"></script>
-  <script src="js/leaderboard.js?v=20"></script>
-  <script src="js/share.js?v=20"></script>
-  <script src="js/avatar.js?v=20"></script>
-  <script src="js/profile.js?v=20"></script>
-  <script src="js/rewards.js?v=20"></script>
-  <script src="js/game.js?v=20"></script>
-  <script src="js/app.js?v=20"></script>
-  <script src="js/sunday.js?v=20"></script>
-  <script src="js/sunday-ui.js?v=20"></script>
-  <script src="js/trail.js?v=20"></script>
-  <script src="js/trail-ui.js?v=20"></script>
-  <script src="js/profile-ui.js?v=20"></script>
+  <script src="js/config.js?v=21"></script>
+  <script src="js/analytics.js?v=21"></script>
+  <script src="js/leaderboard.js?v=21"></script>
+  <script src="js/share.js?v=21"></script>
+  <script src="js/avatar.js?v=21"></script>
+  <script src="js/profile.js?v=21"></script>
+  <script src="js/rewards.js?v=21"></script>
+  <script src="js/game.js?v=21"></script>
+  <script src="js/app.js?v=21"></script>
+  <script src="js/sunday.js?v=21"></script>
+  <script src="js/sunday-ui.js?v=21"></script>
+  <script src="js/trail.js?v=21"></script>
+  <script src="js/trail-ui.js?v=21"></script>
+  <script src="js/profile-ui.js?v=21"></script>
 </body>
 </html>

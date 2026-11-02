@@ -308,6 +308,7 @@
   async function loadLeaders() {
     renderLbDists();
     $("lb-archive").hidden = lbMode !== "sunday";
+    $("lb-past").hidden = true;
     const week = window.SundayRun.weekInfo(0);
     $("lb-lead").textContent = {
       game: "Найдовші забіги в Titan Run серед учасників Titan Club Rivne.",
@@ -346,10 +347,25 @@
           ? timeRows(rows)
           : empty(lbMode === "sunday" ? "Цього тижня ще ніхто не біг. Будь першим! 🏃" : "Тут ще ніхто не біг. Будь першим! 🏔️");
         renderMe(mine && mine.place);
+        if (lbMode === "sunday") loadPastWeek(d, seq);
       }
     } catch (e) {
       if (seq === lbSeq) $("lb-list").innerHTML = empty("Не вдалося завантажити рейтинг 😕");
     }
+  }
+
+  // Минулий тиждень: топ-3 сірим, далі «⋯» і перехід в архів
+  async function loadPastWeek(d, seq) {
+    const past = window.SundayRun.weekInfo(-1);
+    try {
+      const rows = await Leaderboard.sundayTop(past.id, d, 4);
+      if (seq !== lbSeq) return;
+      $("lb-past-title").textContent = `Минулий тиждень №${past.number} · ${past.theme.name}`;
+      $("lb-past-list").innerHTML = rows.length
+        ? timeRows(rows.slice(0, 3)) + (rows.length > 3 ? '<li class="leaders__more">⋯</li>' : "")
+        : empty("Минулого тижня ніхто не біг");
+      $("lb-past").hidden = false;
+    } catch (e) {}
   }
 
   $("lb-mode").addEventListener("click", (e) => {
