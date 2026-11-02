@@ -1,4 +1,4 @@
-// Вкладка «Профіль»: аватар, гардероб, статистика, досягнення й активація промокодів.
+// Вкладка «Профіль»: аватар і статистика, а нижче розділи: гардероб, досягнення, супер-кросівки й промокоди.
 (function () {
   const $ = (id) => document.getElementById(id);
   const { formatTime } = window.SundayRun;
@@ -148,11 +148,22 @@
     }
   });
 
+  // Розділи профілю: Вигляд / Ачівки й задачі / Буст-кросівки — щоб не гортати донизу
+  function showPane(name) {
+    document.querySelectorAll("#profile-tabs .ptabs__btn").forEach((b) => b.classList.toggle("is-active", b.dataset.pane === name));
+    ["look", "goals", "boost"].forEach((p) => ($("pane-" + p).hidden = p !== name));
+  }
+
+  $("profile-tabs").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-pane]");
+    if (btn) showPane(btn.dataset.pane);
+  });
+
   document.querySelectorAll(".tabs__btn").forEach((btn) =>
     btn.addEventListener("click", () => {
       if (btn.dataset.tab === "profile") render();
     })
   );
 
-  window.ProfileUI = { render };
+  window.ProfileUI = { render, showPane };
 })();
