@@ -13,25 +13,113 @@
     return `<div class="stat"><span class="stat__val">${value}</span><span class="stat__lbl">${label}</span></div>`;
   }
 
-  // Стовпчики: скільки людей було на кожній неділі поточного року (усі). Тап по стовпчику показує деталі.
-  function chart(runs) {
-    const year = runs[runs.length - 1].year;
-    const last = runs.filter((r) => r.year === year);
-    const max = Math.max(1, ...last.map((r) => r.count));
-    const bars = last
+  const MONTHS = ["січ", "лют", "бер", "кві", "тра", "чер", "лип", "сер", "вер", "жов", "лис", "гру"];
+  const monthOf = (iso) => Number(iso.slice(5, 7)) - 1;
+  const people = (n) => `${n} ${plural(n, "учасник", "учасники", "учасників")}`;
+
+  // Підписи місяців під колонками тижнів (лише там, де місяць змінюється)
+  function monthRow(runs, cls) {
+    let prev = -1;
+    return `<div class="${cls}">${runs
       .map((r) => {
+        const m = monthOf(r.date);
+        const label = m !== prev ? MONTHS[m] : "";
+        prev = m;
+        return `<span>${label}</span>`;
+      })
+      .join("")}</div>`;
+  }
+
+  // Стовпчики: скільки людей було на кожній неділі. Гортається вліво-вправо, відкривається на останніх тижнях.
+  function chart(runs, year) {
+    const max = Math.max(1, ...runs.map((r) => r.count));
+    const avg = runs.reduce((n, r) => n + r.count, 0) / runs.length;
+    const bars = runs
+      .map((r, i) => {
         const h = Math.max(4, Math.round((r.count / max) * 100));
-        const info = `Тиждень ${r.week} · ${Club.formatDate(r.date)}: ${r.count} ${plural(r.count, "учасник", "учасники", "учасників")}${r.km !== null ? ` · ${num(r.km)} км` : ""}`;
-        return `<button class="club-bar" type="button" data-info="${escapeHtml(info)}" aria-label="${escapeHtml(info)}"><span style="height:${h}%"></span></button>`;
+        const info = `Тиждень ${r.week} · ${Club.formatDate(r.date)}: ${people(r.count)}${r.km !== null ? ` · ${num(r.km)} км` : ""}`;
+        return `<button class="club-bar${i === runs.length - 1 ? " is-last" : ""}" type="button" data-info="${escapeHtml(info)}" aria-label="${escapeHtml(info)}"><span style="height:${h}%"></span><i>${r.count}</i></button>`;
       })
       .join("");
-    const first = last[0];
-    const end = last[last.length - 1];
     return `
       <h3 class="profile__sub">Учасників на пробіжках · ${year}</h3>
-      <div class="club-chart" id="club-chart">${bars}</div>
-      <div class="club-chart__axis"><span>Тиждень ${first.week}</span>${last.length > 8 ? `<span>Тиждень ${last[Math.floor(last.length / 2)].week}</span>` : ""}<span>Тиждень ${end.week}</span></div>
-      <p class="club-chart__info" id="club-chart-info">Торкнись стовпчика, щоб побачити деталі</p>`;
+      <div class="club-scroll" data-scroll-end>
+        <div class="club-chart" style="--avg:${Math.round((avg / max) * 100)}%">${bars}</div>
+        ${monthRow(runs, "club-months club-months--chart")}
+      </div>
+      <p class="club-chart__info" id="club-chart-info">Гортай вліво, щоб побачити попередні тижні. Торкнись стовпчика — деталі. Пунктир — середнє.</p>`;
+  }
+
+  // «Шлях марафону»: скільки учасників уже дійшли до кожної нагороди за рік
+  function rewards(athletes, year) {
+    const list = window.REWARDS || [];
+    if (!list.length) return "";
+    const total = athletes.filter((a) => a.active || a.yearCount > 0).length;
+    return `
+      <h3 class="profile__sub">Нагороди ${year}</h3>
+      <p class="muted small-left">Скільки учасників уже отримали кожну нагороду програми «Марафон підтримки».</p>
+      <div class="club-path">
+        ${list
+          .map((r, i) => {
+            const got = athletes.filter((a) => a.yearCount >= r.runs).length;
+            return `<div class="club-step${i === list.length - 1 ? " is-final" : ""}">
+              <span class="club-step__icon">${r.icon}</span>
+              <b class="club-step__runs">${r.runs}</b>
+              <span class="club-step__name">${escapeHtml(r.name)}</span>
+              <span class="club-step__got"><b>${got}</b> з ${total}</span>
+            </div>`;
+          })
+          .join("")}
+      </div>`;
+  }
+
+  // Теплова карта: рядок — персонаж, клітинка — неділя. Гортається, ім'я персонажа лишається зліва.
+  function heatmap(athletes, runs, year) {
+    const rows = athletes.filter((a) => a.yearCount > 0).sort((a, b) => b.yearCount - a.yearCount || a.persona.localeCompare(b.persona, "uk"));
+    if (!rows.length) return "";
+    const sets = runs.map((r) => new Set(r.present));
+    return `
+      <h3 class="profile__sub">Карта пробіжок · ${year}</h3>
+      <p class="muted small-left">Рядок — учасник, клітинка — неділя. <span class="club-legend"><i class="on"></i> був <i></i> не був</span></p>
+      <div class="club-scroll club-heat" data-scroll-end style="--cols:${runs.length}">
+        <div class="club-heat__row club-heat__head"><span class="club-heat__who"></span>${monthRow(runs, "club-months club-months--heat")}</div>
+        ${rows
+          .map(
+            (a) => `<div class="club-heat__row">
+              <span class="club-heat__who" title="${escapeHtml(a.persona)}">${escapeHtml(a.emoji)} ${escapeHtml(a.persona)}</span>
+              <span class="club-heat__cells">${runs
+                .map((r, i) => {
+                  const on = sets[i].has(a.id);
+                  return `<button class="club-cell${on ? " on" : ""}" type="button" data-info="${escapeHtml(`${a.emoji} ${a.persona} · тиждень ${r.week}, ${Club.formatDate(r.date)}: ${on ? "був ✓" : "не був"}`)}"></button>`;
+                })
+                .join("")}</span>
+            </div>`
+          )
+          .join("")}
+      </div>
+      <p class="club-chart__info" id="club-heat-info">Торкнись клітинки, щоб побачити неділю.</p>`;
+  }
+
+  // Повний перелік — згорнутий, хто хоче, той розгорне
+  function roster(athletes, held) {
+    const list = athletes
+      .filter((a) => a.active || a.yearCount > 0)
+      .sort((a, b) => b.yearCount - a.yearCount || a.persona.localeCompare(b.persona, "uk"));
+    const next = (n) => {
+      const r = window.nextReward ? window.nextReward(n) : null;
+      return r ? `${r.icon} ${escapeHtml(r.name)} · ще ${r.runs - n}` : "🏁 усі нагороди";
+    };
+    return `
+      <details class="club-roster">
+        <summary>Усі учасники (${list.length})</summary>
+        <ol class="leaders club-list">
+          ${list
+            .map((a, i) =>
+              row(i + 1, a, `${held ? Math.round((a.yearCount / held) * 100) : 0}%`, `${a.yearCount} з ${held} · ${next(a.yearCount)}${a.streak > 1 ? ` · 🔥 ${a.streak} поспіль` : ""}`)
+            )
+            .join("")}
+        </ol>
+      </details>`;
   }
 
   function row(place, a, right, sub) {
@@ -50,6 +138,12 @@
       $("club-body").innerHTML = '<p class="leaders__empty">Скоро тут з\'явиться статистика недільних пробіжок клубу 🏃</p>';
       return;
     }
+    // Нагороди, графік і карта — за поточний (останній) рік програми
+    const year = s.runs[s.runs.length - 1].year;
+    const yearRuns = s.runs.filter((r) => r.year === year);
+    const yearSets = yearRuns.map((r) => new Set(r.present));
+    s.athletes.forEach((a) => (a.yearCount = yearSets.filter((set) => set.has(a.id)).length));
+
     const record = s.runs.reduce((m, r) => (r.count > m.count ? r : m), s.runs[0]);
     const active = s.athletes.filter((a) => a.count > 0);
     const loyal = [...active].sort((a, b) => b.count - a.count || b.km - a.km).slice(0, TOP_N);
@@ -63,7 +157,8 @@
         ${tile(num(s.avg), "у середньому")}
         ${tile(record.count, `рекорд · тиждень ${record.week}`)}
       </div>
-      ${chart(s.runs)}
+      ${rewards(s.athletes, year)}
+      ${chart(yearRuns, year)}
       <h3 class="profile__sub">Найвірніші</h3>
       <ol class="leaders club-list">
         ${loyal.map((a, i) => row(i + 1, a, `${a.pct}%`, `${a.count} з ${s.held}${a.km ? ` · ${num(Math.round(a.km))} км` : ""}`)).join("")}
@@ -76,7 +171,11 @@
              </ol>`
           : ""
       }
-      <p class="muted small-left club-foot">Дані вносять адміни клубу після кожної неділі.</p>`;
+      ${heatmap(s.athletes, yearRuns, year)}
+      ${roster(s.athletes, yearRuns.length)}
+      <p class="muted small-left club-foot">Дані вносять адміни клубу після кожної неділі. Справжні імена замінені на вигаданих персонажів.</p>`;
+    // Графік і карту відкриваємо на найсвіжіших тижнях
+    requestAnimationFrame(() => document.querySelectorAll("#club-body [data-scroll-end]").forEach((el) => (el.scrollLeft = el.scrollWidth)));
   }
 
   let loading = false;
@@ -99,11 +198,12 @@
   }
 
   $("club-body").addEventListener("click", (e) => {
-    const bar = e.target.closest(".club-bar");
-    if (!bar) return;
-    document.querySelectorAll(".club-bar.is-on").forEach((b) => b.classList.remove("is-on"));
-    bar.classList.add("is-on");
-    $("club-chart-info").textContent = bar.dataset.info;
+    const el = e.target.closest(".club-bar, .club-cell");
+    if (!el) return;
+    const cls = el.classList.contains("club-bar") ? "club-bar" : "club-cell";
+    document.querySelectorAll(`.${cls}.is-on`).forEach((b) => b.classList.remove("is-on"));
+    el.classList.add("is-on");
+    $(cls === "club-bar" ? "club-chart-info" : "club-heat-info").textContent = el.dataset.info;
   });
 
   document.querySelectorAll(".tabs__btn").forEach((btn) =>

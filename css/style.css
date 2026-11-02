@@ -399,15 +399,51 @@ body.is-home .topbar { display: none; }
 /* ---------- Клуб: відвідуваність недільних пробіжок ---------- */
 .home-card--club { border-left-color: var(--ink); }
 .club-tiles { grid-template-columns: repeat(2, 1fr); margin-top: 12px; }
-.club-chart {
-  display: flex; align-items: flex-end; gap: 2px; height: 120px; padding: 8px;
-  background: var(--surface); border-radius: var(--radius);
-}
-.club-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; cursor: pointer; min-width: 0; }
+/* Графік і теплова карта гортаються вліво-вправо */
+.club-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; background: var(--surface); border-radius: var(--radius); padding: 8px; scrollbar-width: thin; }
+.club-chart { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 130px; width: max-content; }
+.club-chart::after { content: ""; position: absolute; left: 0; right: 0; bottom: var(--avg); border-top: 2px dashed var(--ink); opacity: .45; pointer-events: none; }
+.club-bar { position: relative; flex: none; width: 14px; height: 100%; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; cursor: pointer; }
 .club-bar span { display: block; width: 100%; border-radius: 3px 3px 0 0; background: var(--brand); opacity: .8; }
+.club-bar i { display: none; position: absolute; left: 50%; transform: translateX(-50%); top: -2px; font: 700 10px var(--font); font-style: normal; color: var(--ink); }
+.club-bar.is-last span { background: var(--accent); opacity: 1; }
 .club-bar.is-on span, .club-bar:hover span { opacity: 1; background: var(--ink); }
-.club-chart__axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.club-months { display: flex; gap: 4px; width: max-content; margin-top: 4px; }
+.club-months span { flex: none; width: 14px; font-size: 10px; color: var(--muted); white-space: nowrap; overflow: visible; }
 .club-chart__info { margin: 6px 0 0; font-size: 13px; font-weight: 600; min-height: 1.3em; }
 .club-list { margin-top: 0; }
 .club-sub { display: block; color: var(--muted) !important; font-weight: 600; font-size: 12px; }
 .club-foot { margin-top: 16px; }
+
+/* Нагороди програми */
+.club-path { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.club-step { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; background: var(--surface); border-radius: 12px; text-align: center; min-width: 0; }
+.club-step.is-final { outline: 2px solid var(--brand); }
+.club-step__icon { font-size: 24px; }
+.club-step__runs { font: 700 20px var(--font-display); color: var(--brand); line-height: 1; }
+.club-step__name { font-size: 10px; font-weight: 700; line-height: 1.15; max-width: 100%; overflow-wrap: anywhere; hyphens: auto; }
+.club-step__got { font-size: 11px; color: var(--muted); }
+.club-step__got b { color: var(--ink); }
+
+/* Теплова карта: ім'я персонажа «прилипає» зліва під час гортання */
+.club-heat { padding: 8px 8px 8px 0; }
+.club-heat__row { display: flex; align-items: center; width: max-content; }
+.club-heat__who {
+  position: sticky; left: 0; z-index: 1; flex: none; width: 118px; padding: 0 6px 0 8px; background: var(--surface);
+  font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.club-heat__cells { display: flex; gap: 2px; padding: 1px 0; }
+.club-cell { flex: none; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 2px; background: var(--surface-2); cursor: pointer; }
+.club-cell.on { background: var(--brand); }
+.club-cell.is-on { outline: 2px solid var(--ink); }
+.club-heat__head .club-months { margin: 0 0 2px; gap: 2px; }
+.club-months--heat span { width: 12px; }
+.club-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--surface-2); vertical-align: -1px; margin-left: 6px; }
+.club-legend i.on { background: var(--brand); }
+
+/* Повний перелік учасників — згорнутий */
+.club-roster { margin-top: 18px; background: var(--surface); border-radius: var(--radius); padding: 4px 12px; }
+.club-roster summary { cursor: pointer; padding: 10px 0; font: 600 16px var(--font-display); text-transform: uppercase; letter-spacing: .5px; color: var(--ink); }
+.club-roster[open] summary { border-bottom: 1px solid var(--surface-2); margin-bottom: 8px; }
+.club-roster .leaders__row { background: var(--bg); }
+.club-roster ol { padding-bottom: 10px; }
