@@ -320,9 +320,8 @@ main { flex: 1; display: flex; min-height: 0; }
 .boost-mark { font-size: 14px; }
 
 /* ---------- Головна: вибір формату ---------- */
-/* На головній верхнє меню не потрібне: ті самі розділи там великими кнопками */
-body.is-home .tabs { display: none; }
-body.is-home .topbar { justify-content: center; }
+/* На головній шапка не потрібна: велике лого й ті самі розділи там великими кнопками */
+body.is-home .topbar { display: none; }
 .home { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
 .home__logo { width: min(150px, 40vw); }
 .home__title { margin: 0; font: 700 44px var(--font-display); letter-spacing: 2px; line-height: 1; }
@@ -369,6 +368,17 @@ body.is-home .topbar { justify-content: center; }
 .lb-modes .seg__btn.is-active { background: var(--brand); }
 #lb-lead { margin: 10px 0 0; font-size: 14px; }
 .lb-archive { display: block; margin: 14px auto 0; }
+/* Минулий тиждень «Неділі»: сірим, щоб не плутати з поточним */
+.lb-past { margin-top: 22px; }
+.lb-past__title { margin: 0; font: 600 16px var(--font-display); text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.lb-past .leaders { margin-top: 8px; }
+.lb-past .leaders__row { background: var(--surface-2); color: var(--muted); filter: grayscale(1); }
+.lb-past .leaders__km { color: var(--muted); }
+.lb-past .leaders__more { text-align: center; color: var(--muted); font: 700 22px var(--font-display); line-height: .6; letter-spacing: 4px; }
+
+.home__links { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; font-size: 14px; }
+.home__links a { color: var(--muted); text-decoration: none; }
+.home__links b { color: var(--brand); }
 
 /* ---------- Розділи профілю ---------- */
 .profile .stats { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; margin-top: 12px; }
