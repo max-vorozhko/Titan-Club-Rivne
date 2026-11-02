@@ -10,6 +10,12 @@
   const SHEET = Object.assign({ id: "", tab: "Аркуш1", kmTab: "Кілометри" }, cfg.attendanceSheet);
   const FIRST_WEEK_COL = 5; // колонка F: тиждень 1 (A №, B ПІБ, C теоретично, D фактично, E %)
   const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  // Кнопка «Увійти з Google» від самого Google (Google Identity Services). Працює напряму з github.io,
+  // без проміжної сторінки firebaseapp.com, яку Safari на iPhone блокує (вхід «губився»).
+  const CLIENT_ID = cfg.googleClientId || "";
+  const GIS_SRC = "https://accounts.google.com/gsi/client";
+  // Вбудовані браузери Telegram / Instagram / Facebook: Google-вхід у них часто не працює
+  const IN_APP = typeof window.TelegramWebviewProxy !== "undefined" || /Telegram|Instagram|FBAN|FBAV/i.test(navigator.userAgent);
 
   let auth, db, FV;
   let user = null;
@@ -69,6 +75,26 @@
     $("adm-user").hidden = name === "login";
   }
 
+  // Google повернув ID-токен — входимо з ним у Firebase (запит напряму до Firebase, без перенаправлень)
+  async function onGisCredential(resp) {
+    status("adm-login-status", "Входжу…");
+    try {
+      await auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(resp.credential));
+      status("adm-login-status", "");
+    } catch (e) {
+      status("adm-login-status", "Не вдалося увійти 😕 " + (e.code || ""), true);
+    }
+  }
+
+  async function setupGis() {
+    await loadScript(GIS_SRC);
+    google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onGisCredential, ux_mode: "popup", auto_select: false, use_fedcm_for_button: true });
+    google.accounts.id.renderButton($("adm-gis"), { theme: "filled_blue", size: "large", shape: "pill", text: "signin_with", locale: "uk", width: 280 });
+    $("adm-signin").hidden = true;
+    $("adm-gis").hidden = false;
+  }
+
+  // Запасний варіант (якщо googleClientId не задано): вхід через вікно Firebase
   async function signIn() {
     status("adm-login-status", "");
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -324,6 +350,22 @@
   let sheetsToken = null;
   async function getSheetsToken() {
     if (sheetsToken && sheetsToken.until > Date.now()) return sheetsToken.value;
+    if (CLIENT_ID && window.google && google.accounts && google.accounts.oauth2) {
+      // Вікно Google відкривається синхронно від натискання кнопки, тож Safari його не блокує
+      const res = await new Promise((resolve, reject) => {
+        google.accounts.oauth2
+          .initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SHEETS_SCOPE,
+            login_hint: user.email,
+            callback: (r) => (r.error ? reject(Object.assign(new Error(r.error), { code: r.error })) : resolve(r)),
+            error_callback: (e) => reject(Object.assign(new Error(e.type || "popup"), { code: e.type === "popup_closed" ? "auth/popup-closed-by-user" : e.type })),
+          })
+          .requestAccessToken({ prompt: "" });
+      });
+      sheetsToken = { value: res.access_token, until: Date.now() + (Number(res.expires_in) || 3000) * 1000 - 60000 };
+      return sheetsToken.value;
+    }
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.addScope(SHEETS_SCOPE);
     provider.setCustomParameters({ login_hint: user.email });
@@ -472,7 +514,13 @@
   // ---------- Події ----------
 
   $("adm-signin").addEventListener("click", signIn);
-  $("adm-logout").addEventListener("click", () => auth.signOut());
+  $("adm-inapp-copy").addEventListener("click", async () => {
+    if (await copy(location.href.split("#")[0])) toast("Посилання скопійовано — встав у Safari або Chrome");
+  });
+  $("adm-logout").addEventListener("click", () => {
+    if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+    auth.signOut();
+  });
 
   $("adm-tabs").addEventListener("click", (e) => {
     const btn = e.target.closest("[data-pane]");
@@ -556,5 +604,14 @@
     }
     auth.getRedirectResult().catch(() => {});
     auth.onAuthStateChanged(onUser);
+    $("adm-inapp").hidden = !IN_APP;
+    $("adm-inapp-url").textContent = location.href.split("#")[0];
+    if (CLIENT_ID) {
+      try {
+        await setupGis();
+      } catch (e) {
+        status("adm-login-status", "Не вдалося завантажити кнопку Google — спробую звичайний вхід.");
+      }
+    }
   })();
 })();

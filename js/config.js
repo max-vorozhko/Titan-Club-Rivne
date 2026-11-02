@@ -17,6 +17,9 @@ window.TITAN_CONFIG = Object.assign(
     donateUrl: "https://send.monobank.ua/jar/A25V4sTs2g",
     boostPrice: 30, // грн за одні «Супер-кросівки»
     promoContact: "@max_vorozhko",
+    // Client ID веб-клієнта Google для входу в адмінку (Google Cloud → Google Auth Platform → Clients →
+    // «Web client (auto created by Google Service)»). Публічний за задумом. Порожній — запасний вхід через Firebase.
+    googleClientId: "",
     // Google-таблиця відвідуваності для адмінки (admin.html → «Таблиця»): лише копія, головні дані — в адмінці.
     // id — частина посилання між /d/ і /edit; таблиця лишається приватною, доступ — через Google-вхід адміна.
     attendanceSheet: { id: "1_GkYJtKmIGXlxWziViNhWwbQTiB34pIkdRG8UyP3FnM", tab: "Аркуш1", kmTab: "Кілометри" },
