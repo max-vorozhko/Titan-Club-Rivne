@@ -67,9 +67,81 @@ service cloud.firestore {
 
     // ---------- Бусти «Супер-кросівки» й промокоди ----------
 
-    // Адміністратор (генерує промокоди на сторінці admin.html) — анонімний ідентифікатор його пристрою
+    // ---------- Адміністратори (сторінка admin.html, вхід через Google) ----------
+
+    // Підтверджений Google email того, хто ввійшов (у анонімних гравців його немає)
+    function verifiedEmail() {
+      return request.auth != null
+        && request.auth.token.get('email_verified', false) == true
+        ? request.auth.token.get('email', '')
+        : '';
+    }
+
+    // Список адмінів — колекція admins/{email} з полем role: "owner" або "admin".
+    // Її створює власник вручну у Firebase Console, тож email-и не потрапляють у публічний репозиторій.
+    function adminRole() {
+      return verifiedEmail() != ''
+        && exists(/databases/$(database)/documents/admins/$(verifiedEmail()))
+        ? get(/databases/$(database)/documents/admins/$(verifiedEmail())).data.role
+        : '';
+    }
+
+    // Власник: промокоди + усе, що може адмін клубу.
+    // Старий анонімний ідентифікатор пристрою лишається, поки власник не перейде на вхід через Google.
+    function isOwner() {
+      return request.auth != null
+        && (request.auth.uid in ['L5F6ELplpsaOGeqSiOqiyoYPTBl1'] || adminRole() == 'owner');
+    }
+
+    // Адміни клубу: відмічають відвідуваність недільних пробіжок і ведуть список атлетів
+    function isClubAdmin() {
+      return request.auth != null && adminRole() in ['owner', 'admin'];
+    }
+
+    // Кожен бачить лише свій запис (адмінка дізнається з нього роль); змінити список не може ніхто з сайту
+    match /admins/{email} {
+      allow get: if verifiedEmail() != '' && verifiedEmail() == email;
+    }
+
+    // Промокоди генерує лише власник
     function isAdmin() {
-      return request.auth != null && request.auth.uid in ['L5F6ELplpsaOGeqSiOqiyoYPTBl1'];
+      return isOwner();
+    }
+
+    // Атлети клубу з реальними іменами: бачать і змінюють лише адміни
+    match /athletes/{id} {
+      allow read, delete: if isClubAdmin();
+      allow create, update: if isClubAdmin()
+        && request.resource.data.keys().hasOnly(['name', 'persona', 'emoji', 'active', 'updatedAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60
+        && request.resource.data.persona is string && request.resource.data.persona.size() <= 40
+        && request.resource.data.emoji is string && request.resource.data.emoji.size() <= 16
+        && request.resource.data.active is bool
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // Недільні пробіжки runs/{рік-тиждень}: дата, кілометри, хто був і хто вніс — лише для адмінів
+    match /runs/{id} {
+      allow read, delete: if isClubAdmin();
+      allow create, update: if isClubAdmin()
+        && id.matches('^[0-9]{4}-[0-9]{1,2}$')
+        && request.resource.data.keys().hasOnly(['date', 'km', 'present', 'updatedBy', 'updatedAt'])
+        && request.resource.data.date is string
+        && (request.resource.data.km == null || (request.resource.data.km is number && request.resource.data.km >= 0 && request.resource.data.km <= 100))
+        && request.resource.data.present is list && request.resource.data.present.size() <= 300
+        && request.resource.data.updatedBy == verifiedEmail()
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // Публічна статистика клубу club/public: лише вигадані персонажі, без реальних імен.
+    // Читають усі (вкладка «Клуб» у грі), пишуть лише адміни.
+    match /club/public {
+      allow read: if true;
+      allow create, update: if isClubAdmin()
+        && request.resource.data.keys().hasOnly(['athletes', 'runs', 'updatedAt'])
+        && request.resource.data.athletes is map
+        && request.resource.data.runs is map
+        && request.resource.data.updatedAt == request.time;
     }
 
     // Одноразові промокоди codes/{КОД}. Звичайні гравці не бачать і не перебирають коди:

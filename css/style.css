@@ -395,3 +395,19 @@ body.is-home .topbar { display: none; }
 .ptabs__btn.is-active { border-color: var(--brand); background: var(--brand); color: #fff; }
 .ppane > .small-left:first-child { margin: 0 0 10px; }
 .boost-card .btn--wide { font-size: 17px; padding: 12px 10px; letter-spacing: .5px; }
+
+/* ---------- Клуб: відвідуваність недільних пробіжок ---------- */
+.home-card--club { border-left-color: var(--ink); }
+.club-tiles { grid-template-columns: repeat(2, 1fr); margin-top: 12px; }
+.club-chart {
+  display: flex; align-items: flex-end; gap: 3px; height: 120px; padding: 8px;
+  background: var(--surface); border-radius: var(--radius);
+}
+.club-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; padding: 0; border: 0; background: none; cursor: pointer; min-width: 0; }
+.club-bar span { display: block; width: 100%; border-radius: 3px 3px 0 0; background: var(--brand); opacity: .8; }
+.club-bar.is-on span, .club-bar:hover span { opacity: 1; background: var(--ink); }
+.club-chart__axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.club-chart__info { margin: 6px 0 0; font-size: 13px; font-weight: 600; min-height: 1.3em; }
+.club-list { margin-top: 0; }
+.club-sub { display: block; color: var(--muted) !important; font-weight: 600; font-size: 12px; }
+.club-foot { margin-top: 16px; }

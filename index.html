@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=22">
+  <link rel="stylesheet" href="css/style.css?v=23">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -22,6 +22,7 @@
       <button class="tabs__btn" data-tab="sunday" role="tab">Неділя</button>
       <button class="tabs__btn" data-tab="trail" role="tab">Трейл</button>
       <button class="tabs__btn" data-tab="leaders" role="tab">Рейтинг</button>
+      <button class="tabs__btn" data-tab="club" role="tab">Клуб</button>
       <button class="tabs__btn" data-tab="profile" role="tab">Профіль</button>
     </nav>
   </header>
@@ -45,6 +46,10 @@
           <button class="home-card" data-go="trail" type="button">
             <span class="home-card__icon">🏔️</span>
             <span class="home-card__text"><b>Трейл</b><small>7, 13 або 26 км з рельєфом: підготовка до вертикалей</small></span>
+          </button>
+          <button class="home-card home-card--club" data-go="club" type="button">
+            <span class="home-card__icon">📊</span>
+            <span class="home-card__text"><b>Клуб</b><small>Відвідуваність недільних пробіжок і кілометри клубу</small></span>
           </button>
         </div>
         <div class="home__more">
@@ -298,6 +303,17 @@
       </div>
     </section>
 
+    <!-- КЛУБ: відвідуваність недільних пробіжок (дані з адмінки, лише вигадані персонажі) -->
+    <section id="tab-club" class="tab">
+      <div class="panel club">
+        <h2>Клуб: неділі</h2>
+        <p class="muted small-left">Відвідуваність недільних пробіжок Titan Club Rivne. Щоб зберегти приватність, імена замінені на вигаданих персонажів.</p>
+        <div class="club__body" id="club-body">
+          <p class="leaders__empty">Завантажую…</p>
+        </div>
+      </div>
+    </section>
+
     <!-- ПРОФІЛЬ -->
     <section id="tab-profile" class="tab">
       <div class="panel profile">
@@ -402,19 +418,21 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=22"></script>
-  <script src="js/analytics.js?v=22"></script>
-  <script src="js/leaderboard.js?v=22"></script>
-  <script src="js/share.js?v=22"></script>
-  <script src="js/avatar.js?v=22"></script>
-  <script src="js/profile.js?v=22"></script>
-  <script src="js/rewards.js?v=22"></script>
-  <script src="js/game.js?v=22"></script>
-  <script src="js/app.js?v=22"></script>
-  <script src="js/sunday.js?v=22"></script>
-  <script src="js/sunday-ui.js?v=22"></script>
-  <script src="js/trail.js?v=22"></script>
-  <script src="js/trail-ui.js?v=22"></script>
-  <script src="js/profile-ui.js?v=22"></script>
+  <script src="js/config.js?v=23"></script>
+  <script src="js/analytics.js?v=23"></script>
+  <script src="js/leaderboard.js?v=23"></script>
+  <script src="js/share.js?v=23"></script>
+  <script src="js/avatar.js?v=23"></script>
+  <script src="js/profile.js?v=23"></script>
+  <script src="js/rewards.js?v=23"></script>
+  <script src="js/game.js?v=23"></script>
+  <script src="js/app.js?v=23"></script>
+  <script src="js/sunday.js?v=23"></script>
+  <script src="js/sunday-ui.js?v=23"></script>
+  <script src="js/trail.js?v=23"></script>
+  <script src="js/trail-ui.js?v=23"></script>
+  <script src="js/profile-ui.js?v=23"></script>
+  <script src="js/club.js?v=23"></script>
+  <script src="js/club-ui.js?v=23"></script>
 </body>
 </html>
