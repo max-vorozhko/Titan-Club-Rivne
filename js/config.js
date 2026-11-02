@@ -19,7 +19,7 @@ window.TITAN_CONFIG = Object.assign(
     promoContact: "@max_vorozhko",
     // Client ID веб-клієнта Google для входу в адмінку (Google Cloud → Google Auth Platform → Clients →
     // «Web client (auto created by Google Service)»). Публічний за задумом. Порожній — запасний вхід через Firebase.
-    googleClientId: "",
+    googleClientId: "400161018413-kq8h22j330i1hgfcus4oj67i1detu2sq.apps.googleusercontent.com",
     // Google-таблиця відвідуваності для адмінки (admin.html → «Таблиця»): лише копія, головні дані — в адмінці.
     // id — частина посилання між /d/ і /edit; таблиця лишається приватною, доступ — через Google-вхід адміна.
     attendanceSheet: { id: "1_GkYJtKmIGXlxWziViNhWwbQTiB34pIkdRG8UyP3FnM", tab: "Аркуш1", kmTab: "Кілометри" },
