@@ -456,3 +456,14 @@ body.is-home .topbar { display: none; }
 .lb-past .mv { display: none; }
 .mv-legend { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
 .mv-legend .mv { margin: 0 2px 0 0; }
+
+/* Підказка «Додай Titan Run на екран» (PWA) */
+.install {
+  position: relative; display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 10px; padding: 12px 34px 12px 14px;
+  text-align: left; border-radius: var(--radius); background: #fff3e8; border: 2px solid var(--brand);
+}
+.install__text { flex: 1; display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.35; }
+.install__text > b { font: 700 16px var(--font-display); text-transform: uppercase; letter-spacing: .5px; }
+.install__ico { font-size: 14px; }
+.install .btn { flex: none; }
+.install__close { position: absolute; top: 6px; right: 8px; border: 0; background: none; font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px; }

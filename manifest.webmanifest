@@ -1,0 +1,17 @@
+{
+  "name": "Titan Run — Titan Club Rivne",
+  "short_name": "Titan Run",
+  "description": "Гра й статистика бігового клубу Titan Club Rivne: Біг, Неділя, Трейл, рейтинги й відвідуваність.",
+  "lang": "uk",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f4f5",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
