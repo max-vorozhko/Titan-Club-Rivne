@@ -15,6 +15,10 @@
   const CLIENT_ID = cfg.googleClientId || "";
   const GIS_SRC = "https://accounts.google.com/gsi/client";
   // Вбудовані браузери Telegram / Instagram / Facebook: Google-вхід у них часто не працює
+  // Адмінку відкрито як встановлений додаток (іконка на екрані). На iPhone там вікна входу Google
+  // часто не повертають результат, тож входимо через повну сторінку Google з поверненням сюди.
+  const STANDALONE = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+  const NONCE_KEY = "titan.admin.nonce";
   const IN_APP = typeof window.TelegramWebviewProxy !== "undefined" || /Telegram|Instagram|FBAN|FBAV/i.test(navigator.userAgent);
 
   let auth, db, FV;
@@ -92,6 +96,47 @@
     google.accounts.id.renderButton($("adm-gis"), { theme: "filled_blue", size: "large", shape: "pill", text: "signin_with", locale: "uk", width: 280 });
     $("adm-signin").hidden = true;
     $("adm-gis").hidden = false;
+  }
+
+  const randomId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+  const returnUrl = () => location.origin + location.pathname;
+
+  // Вхід переходом на сторінку Google (без вікон): Google повертає ID-токен у #id_token=… цієї ж адреси
+  function redirectSignIn() {
+    const nonce = randomId();
+    try {
+      localStorage.setItem(NONCE_KEY, nonce);
+    } catch (e) {}
+    const q = new URLSearchParams({
+      client_id: CLIENT_ID,
+      redirect_uri: returnUrl(),
+      response_type: "id_token",
+      scope: "openid email profile",
+      nonce,
+      prompt: "select_account",
+    });
+    location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + q;
+  }
+
+  // Повернулись від Google: забираємо токен з адреси і входимо у Firebase
+  async function finishRedirectSignIn() {
+    if (!/[#&](id_token|error)=/.test(location.hash)) return;
+    const h = new URLSearchParams(location.hash.slice(1));
+    history.replaceState(null, "", location.pathname + location.search);
+    if (h.get("error")) return status("adm-login-status", "Google не дав увійти: " + h.get("error"), true);
+    const token = h.get("id_token");
+    let expected = null;
+    try {
+      expected = localStorage.getItem(NONCE_KEY);
+      localStorage.removeItem(NONCE_KEY);
+    } catch (e) {}
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      if (expected && payload.nonce !== expected) throw new Error("nonce");
+    } catch (e) {
+      return status("adm-login-status", "Не вдалося перевірити вхід — спробуйте ще раз.", true);
+    }
+    await onGisCredential({ credential: token });
   }
 
   // Запасний варіант (якщо googleClientId не задано): вхід через вікно Firebase
@@ -513,7 +558,7 @@
 
   // ---------- Події ----------
 
-  $("adm-signin").addEventListener("click", signIn);
+  $("adm-signin").addEventListener("click", () => (STANDALONE && CLIENT_ID ? redirectSignIn() : signIn()));
   $("adm-inapp-copy").addEventListener("click", async () => {
     if (await copy(location.href.split("#")[0])) toast("Посилання скопійовано — встав у Safari або Chrome");
   });
@@ -603,10 +648,18 @@
       return status("adm-login-status", "Не вдалося завантажити Firebase 😕", true);
     }
     auth.getRedirectResult().catch(() => {});
+    await finishRedirectSignIn();
     auth.onAuthStateChanged(onUser);
+    if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    $("adm-install").hidden = STANDALONE || !isIOS || IN_APP;
+    document.querySelectorAll(".adm-note-pwa").forEach((el) => (el.hidden = !(STANDALONE && isIOS)));
     $("adm-inapp").hidden = !IN_APP;
     $("adm-inapp-url").textContent = location.href.split("#")[0];
-    if (CLIENT_ID) {
+    if (CLIENT_ID && STANDALONE) {
+      $("adm-signin").textContent = "Увійти з Google";
+      loadScript(GIS_SRC).catch(() => {}); // для доступу до Google-таблиці
+    } else if (CLIENT_ID) {
       try {
         await setupGis();
       } catch (e) {

@@ -6,9 +6,17 @@
   <meta name="robots" content="noindex">
   <title>Адмінка Titan Club</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
+  <!-- Адмінка як окремий додаток на екрані телефона (PWA) -->
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="admin.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icons/admin-apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Titan Адмін">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=27">
-  <link rel="stylesheet" href="css/admin.css?v=27">
+  <link rel="stylesheet" href="css/style.css?v=28">
+  <link rel="stylesheet" href="css/admin.css?v=28">
 </head>
 <body class="admin-page">
   <header class="adm-head">
@@ -32,6 +40,9 @@
         <button class="btn btn--small" id="adm-inapp-copy" type="button">Копіювати посилання</button>
       </div>
       <div class="adm-gis" id="adm-gis" hidden></div>
+      <div class="adm-install" id="adm-install" hidden>
+        📲 <b>Додай адмінку на екран:</b> у Safari натисни «Поділитися» ⬆️ → «На початковий екран». Відкриватиметься окремою іконкою «Titan Адмін».
+      </div>
       <button class="btn btn--primary" id="adm-signin" type="button">Увійти через Google</button>
       <p class="adm-status" id="adm-login-status"></p>
     </section>
@@ -122,6 +133,7 @@
         <div class="adm-card">
           <h2>Вивантажити в Google-таблицю</h2>
           <p class="muted">Головні дані — тут, в адмінці. Кнопка перезапише аркуш «<span class="sheet-tab"></span>» актуальною відвідуваністю, а кілометри — на окремий аркуш «Кілометри».</p>
+          <p class="adm-note-pwa" hidden>У встановленій адмінці на iPhone вікно доступу Google до таблиці може не відкритися — тоді зробіть імпорт чи вивантаження з Safari або з комп'ютера.</p>
           <button class="btn btn--primary" id="sheet-export" type="button">Вивантажити</button>
           <p class="adm-status" id="sheet-export-status"></p>
         </div>
@@ -141,8 +153,8 @@
 
   <div class="toast toast--global" id="global-toast"></div>
 
-  <script src="js/config.js?v=27"></script>
-  <script src="js/club.js?v=27"></script>
-  <script src="js/admin.js?v=27"></script>
+  <script src="js/config.js?v=28"></script>
+  <script src="js/club.js?v=28"></script>
+  <script src="js/admin.js?v=28"></script>
 </body>
 </html>
