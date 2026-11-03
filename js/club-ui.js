@@ -101,7 +101,8 @@
   }
 
   // Повний перелік — згорнутий, хто хоче, той розгорне
-  function roster(athletes, held) {
+  function roster(athletes, held, lastRun) {
+    const yearMoves = addMoves(athletes, "yearCount", lastRun);
     const list = athletes
       .filter((a) => a.active || a.yearCount > 0)
       .sort((a, b) => b.yearCount - a.yearCount || a.persona.localeCompare(b.persona, "uk"));
@@ -115,18 +116,40 @@
         <ol class="leaders club-list">
           ${list
             .map((a, i) =>
-              row(i + 1, a, `${held ? Math.round((a.yearCount / held) * 100) : 0}%`, `${a.yearCount} з ${held} · ${next(a.yearCount)}${a.streak > 1 ? ` · 🔥 ${a.streak} поспіль` : ""}`)
+              row(i + 1, a, `${held ? Math.round((a.yearCount / held) * 100) : 0}%`, `${a.yearCount} з ${held} · ${next(a.yearCount)}${a.streak > 1 ? ` · 🔥 ${a.streak} поспіль` : ""}`, yearMoves.get(a.id))
             )
             .join("")}
         </ol>
       </details>`;
   }
 
-  function row(place, a, right, sub) {
+  // Зміна місця відносно попередньої неділі: місце за кількістю пробіжок до і після останньої неділі
+  function addMoves(list, key, lastRun) {
+    const here = new Set(lastRun ? lastRun.present : []);
+    const now = list.map((a) => a[key]);
+    const before = list.map((a) => a[key] - (here.has(a.id) ? 1 : 0));
+    const rank = (v, all) => all.filter((x) => x > v).length + 1;
+    const moves = new Map();
+    list.forEach((a, i) => {
+      if (before[i] === 0 && now[i] > 0) moves.set(a.id, { isNew: true, move: 0 });
+      else moves.set(a.id, { isNew: false, move: before[i] > 0 ? rank(before[i], before) - rank(now[i], now) : 0 });
+    });
+    return moves;
+  }
+
+  function badge(m) {
+    if (!m) return "";
+    if (m.isNew) return ' <span class="mv mv--new" title="Новий з минулої неділі">NEW</span>';
+    if (m.move > 0) return ` <span class="mv mv--up" title="Піднявся за минулу неділю на ${m.move}">▲${m.move}</span>`;
+    if (m.move < 0) return ` <span class="mv mv--down" title="Опустився за минулу неділю на ${-m.move}">▼${-m.move}</span>`;
+    return "";
+  }
+
+  function row(place, a, right, sub, m) {
     return `
       <li class="leaders__row">
         <span class="leaders__place">${MEDALS[place - 1] || place}</span>
-        <span class="leaders__name">${escapeHtml(a.emoji)} ${escapeHtml(a.persona)}<small class="club-sub">${sub}</small></span>
+        <span class="leaders__name">${escapeHtml(a.emoji)} ${escapeHtml(a.persona)}${badge(m)}<small class="club-sub">${sub}</small></span>
         <span></span>
         <span class="leaders__km">${right}</span>
       </li>`;
@@ -149,6 +172,8 @@
     const loyal = [...active].sort((a, b) => b.count - a.count || b.km - a.km).slice(0, TOP_N);
     const streaks = [...active].filter((a) => a.bestStreak > 1).sort((a, b) => b.bestStreak - a.bestStreak || b.streak - a.streak).slice(0, 5);
     const hasKm = s.clubKm > 0;
+    const lastRun = s.runs[s.runs.length - 1];
+    const moves = addMoves(s.athletes, "count", lastRun);
 
     $("club-body").innerHTML = `
       <div class="stats club-tiles">
@@ -160,8 +185,9 @@
       ${rewards(s.athletes, year)}
       ${chart(yearRuns, year)}
       <h3 class="profile__sub">Найвірніші</h3>
+      <p class="muted small-left">▲▼ — як змінилось місце за минулу неділю, NEW — новенькі.</p>
       <ol class="leaders club-list">
-        ${loyal.map((a, i) => row(i + 1, a, `${a.pct}%`, `${a.count} з ${s.held}${a.km ? ` · ${num(Math.round(a.km))} км` : ""}`)).join("")}
+        ${loyal.map((a, i) => row(i + 1, a, `${a.pct}%`, `${a.count} з ${s.held}${a.km ? ` · ${num(Math.round(a.km))} км` : ""}`, moves.get(a.id))).join("")}
       </ol>
       ${
         streaks.length
@@ -172,7 +198,7 @@
           : ""
       }
       ${heatmap(s.athletes, yearRuns, year)}
-      ${roster(s.athletes, yearRuns.length)}
+      ${roster(s.athletes, yearRuns.length, yearRuns[yearRuns.length - 1])}
       <p class="muted small-left club-foot">Дані вносять адміни клубу після кожної неділі. Справжні імена замінені на вигаданих персонажів.</p>`;
     // Графік і карту відкриваємо на найсвіжіших тижнях
     requestAnimationFrame(() => document.querySelectorAll("#club-body [data-scroll-end]").forEach((el) => (el.scrollLeft = el.scrollWidth)));

@@ -281,7 +281,7 @@
         (r) => `
         <li class="leaders__row${r.me ? " is-me" : ""}">
           <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}</span>
+          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
           <span></span>
           <span class="leaders__km">${fmt(r.time)}</span>
         </li>`
@@ -332,7 +332,7 @@
           ? data.rows.map((r) => `
             <li class="leaders__row${r.me ? " is-me" : ""}">
               <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-              <span class="leaders__name">${escapeHtml(r.name)}${r.me ? " <small>(ти)</small>" : ""}</span>
+              <span class="leaders__name">${escapeHtml(r.name)}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
               <span class="leaders__coins">🪙 ${r.coins}</span>
               <span class="leaders__km">${Number(r.km).toFixed(2)} км</span>
             </li>`).join("")
@@ -340,7 +340,7 @@
         renderMe(data.me && data.me.place, data.total);
       } else {
         const d = lbDist[lbMode];
-        const rows = lbMode === "sunday" ? await Leaderboard.sundayTop(week.id, d, 30) : await Leaderboard.trailTop(d, 30);
+        const rows = lbMode === "sunday" ? await Leaderboard.sundayTop(week.id, d, 30, { moves: true, prevWeek: window.SundayRun.weekInfo(-1).id }) : await Leaderboard.trailTop(d, 30);
         if (seq !== lbSeq) return;
         const mine = rows.find((r) => r.me);
         $("lb-list").innerHTML = rows.length
@@ -362,7 +362,7 @@
       if (seq !== lbSeq) return;
       $("lb-past-title").textContent = `Минулий тиждень №${past.number} · ${past.theme.name}`;
       $("lb-past-list").innerHTML = rows.length
-        ? timeRows(rows.slice(0, 3)) + (rows.length > 3 ? '<li class="leaders__more">⋯</li>' : "")
+        ? timeRows(rows.slice(0, 3).map((r) => ({ ...r, move: 0, isNew: false }))) + (rows.length > 3 ? '<li class="leaders__more">⋯</li>' : "")
         : empty("Минулого тижня ніхто не біг");
       $("lb-past").hidden = false;
     } catch (e) {}

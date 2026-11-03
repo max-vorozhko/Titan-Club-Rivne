@@ -54,6 +54,61 @@
     return ready;
   }
 
+  // ---------- Зміна місця відносно вчора ----------
+  // Кожен запис зберігає dayStart — свій результат на початок доби, коли його востаннє змінювали
+  // (null — запис створено того дня). Звідси для всіх однаково видно «вчорашнє» місце.
+
+  // Північ за київським часом, мс (незалежно від часового поясу телефона)
+  function dayStartMs(now) {
+    const d = now || new Date();
+    const p = {};
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })
+      .formatToParts(d)
+      .forEach((x) => (p[x.type] = Number(x.value)));
+    const wall = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+    const offset = wall - Math.floor(d.getTime() / 1000) * 1000; // київський час мінус UTC
+    return Date.UTC(p.year, p.month - 1, p.day) - offset;
+  }
+
+  const millis = (t) => (t && t.toMillis ? t.toMillis() : null);
+
+  // Значення dayStart для нового запису: результат на початок сьогоднішньої доби
+  function nextDayStart(prev, field) {
+    if (!prev) return null;
+    const at = millis(prev.updatedAt);
+    if (at !== null && at < dayStartMs()) return prev[field];
+    return "dayStart" in prev ? prev.dayStart : prev[field];
+  }
+
+  // Результат запису на початок доби: число, null (з'явився сьогодні) або undefined (невідомо — старий запис)
+  function startValue(d, field) {
+    const at = millis(d.updatedAt);
+    if (at === null) return undefined;
+    if (at < dayStartMs()) return d[field];
+    return "dayStart" in d ? d.dayStart : undefined;
+  }
+
+  // Місце = кількість кращих + 1, однаково для «зараз» і «вчора»
+  function rankOf(value, values, lower) {
+    return values.filter((v) => (lower ? v < value : v > value)).length + 1;
+  }
+
+  // docs: [{id, data}] → рядки, впорядковані за результатом, з move (▲/▼ на скільки місць) і isNew
+  function withMoves(docs, field, lower, uid, knownBefore) {
+    const sorted = docs
+      .map((d) => ({ id: d.id, v: d.data[field], start: startValue(d.data, field), data: d.data }))
+      .sort((a, b) => (lower ? a.v - b.v : b.v - a.v));
+    const now = sorted.map((r) => r.v);
+    // Вчорашня таблиця: невідомий старт вважаємо незмінним результатом
+    const before = sorted.map((r) => (r.start === undefined ? r.v : r.start)).filter((v) => v !== null && v !== undefined);
+    return sorted.map((r, i) => {
+      const row = { id: r.id, place: i + 1, data: r.data, me: r.id === uid, move: 0, isNew: false };
+      if (r.start === null) row.isNew = !(knownBefore && knownBefore.has(r.id));
+      else if (r.start !== undefined) row.move = rankOf(r.start, before, lower) - rankOf(r.v, now, lower);
+      return row;
+    });
+  }
+
   // compat-SDK не має агрегатного count(), тож рахуємо документи; для клубу це кілька сотень записів максимум
   async function countOf(query) {
     try {
@@ -71,20 +126,12 @@
 
   async function top() {
     const { scores, uid } = await connect();
-    const snap = await scores.orderBy("km", "desc").limit(TOP_N).get();
-    const rows = snap.docs.map((d, i) => {
-      const v = d.data();
-      return { place: i + 1, name: v.name, km: v.km, coins: v.coins, me: d.id === uid };
-    });
-    let me = null;
-    const mine = rows.find((r) => r.me);
-    if (mine) me = { place: mine.place, km: mine.km };
-    else {
-      const own = await scores.doc(uid).get();
-      if (own.exists) me = { place: await placeOf(scores, own.data().km), km: own.data().km };
-    }
-    const total = rows.length < TOP_N ? rows.length : await countOf(scores);
-    return { rows, me, total };
+    const snap = await scores.get();
+    const all = withMoves(snap.docs.map((d) => ({ id: d.id, data: d.data() })), "km", false, uid);
+    const rows = all.slice(0, TOP_N).map((r) => ({ place: r.place, name: r.data.name, km: r.data.km, coins: r.data.coins, me: r.me, move: r.move, isNew: r.isNew }));
+    const mine = all.find((r) => r.me);
+    const me = mine ? { place: rankOf(mine.data.km, all.map((r) => r.data.km), false), km: mine.data.km } : null;
+    return { rows, me, total: all.length };
   }
 
   async function submit(run) {
@@ -97,10 +144,11 @@
     const stamp = firebase.firestore.FieldValue.serverTimestamp();
     let best = km;
 
+    const dayStart = nextDayStart(prev, "km");
     if (prev && prev.km >= km) {
       // Рекорд не побито: лише оновлюємо ім'я, якщо його змінили
       best = prev.km;
-      if (prev.name !== name) await ref.set({ ...prev, name, updatedAt: stamp });
+      if (prev.name !== name) await ref.set({ ...prev, name, dayStart, updatedAt: stamp });
     } else {
       await ref.set({
         name,
@@ -108,6 +156,7 @@
         coins: Math.floor(run.coins),
         // Округлюємо вгору, щоб не порушити перевірку швидкості в правилах
         time: Math.ceil(run.time),
+        dayStart,
         updatedAt: stamp,
       });
     }
@@ -130,12 +179,13 @@
     const prev = own.exists ? own.data() : null;
     const stamp = firebase.firestore.FieldValue.serverTimestamp();
     let best = run.time;
+    const dayStart = nextDayStart(prev, "time");
     if (prev && prev.time <= run.time) {
       best = prev.time;
-      if (prev.name !== name) await ref.set({ ...prev, name, updatedAt: stamp });
+      if (prev.name !== name) await ref.set({ ...prev, name, dayStart, updatedAt: stamp });
     } else {
       // boost пишемо лише для забігів із бустом: звичайні результати сумісні й зі старими правилами
-      const doc = { name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), updatedAt: stamp };
+      const doc = { name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), dayStart, updatedAt: stamp };
       if (run.boost) doc.boost = true;
       await ref.set(doc);
     }
@@ -143,10 +193,21 @@
     return { best, place: faster === null ? null : faster + 1 };
   }
 
-  async function sundayTop(week, dist, limit) {
+  // opts.moves + opts.prevWeek: позначки ▲/▼/NEW для поточного тижня
+  async function sundayTop(week, dist, limit, opts) {
     const { db, uid } = await connect();
-    const snap = await sundayRuns(db, week, dist).orderBy("time").limit(limit || TOP_N).get();
-    return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, boost: !!d.data().boost, me: d.id === uid }));
+    if (!(opts && opts.moves)) {
+      const snap = await sundayRuns(db, week, dist).orderBy("time").limit(limit || TOP_N).get();
+      return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, boost: !!d.data().boost, me: d.id === uid }));
+    }
+    const [snap, prevSnap] = await Promise.all([
+      sundayRuns(db, week, dist).get(),
+      opts.prevWeek ? sundayRuns(db, opts.prevWeek, dist).get() : Promise.resolve(null),
+    ]);
+    const known = new Set(prevSnap ? prevSnap.docs.map((d) => d.id) : []);
+    return withMoves(snap.docs.map((d) => ({ id: d.id, data: d.data() })), "time", true, uid, known)
+      .slice(0, limit || TOP_N)
+      .map((r) => ({ place: r.place, name: r.data.name, time: r.data.time, boost: !!r.data.boost, me: r.me, move: r.move, isNew: r.isNew }));
   }
 
   // ---------- Трейл: турнірна таблиця trail/{7k|13k|26k}/runs/{uid}, найкращий час за весь час ----------
@@ -164,12 +225,13 @@
     const prev = own.exists ? own.data() : null;
     const stamp = firebase.firestore.FieldValue.serverTimestamp();
     let best = run.time;
+    const dayStart = nextDayStart(prev, "time");
     if (prev && prev.time <= run.time) {
       best = prev.time;
-      if (prev.name !== name) await ref.set({ ...prev, name, updatedAt: stamp });
+      if (prev.name !== name) await ref.set({ ...prev, name, dayStart, updatedAt: stamp });
     } else {
       // boost пишемо лише для забігів із бустом: звичайні результати сумісні й зі старими правилами
-      const doc = { name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), updatedAt: stamp };
+      const doc = { name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), dayStart, updatedAt: stamp };
       if (run.boost) doc.boost = true;
       await ref.set(doc);
     }
@@ -179,8 +241,19 @@
 
   async function trailTop(dist, limit) {
     const { db, uid } = await connect();
-    const snap = await trailRuns(db, dist).orderBy("time").limit(limit || TOP_N).get();
-    return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, boost: !!d.data().boost, me: d.id === uid }));
+    const snap = await trailRuns(db, dist).get();
+    return withMoves(snap.docs.map((d) => ({ id: d.id, data: d.data() })), "time", true, uid)
+      .slice(0, limit || TOP_N)
+      .map((r) => ({ place: r.place, name: r.data.name, time: r.data.time, boost: !!r.data.boost, me: r.me, move: r.move, isNew: r.isNew }));
+  }
+
+  // Позначка біля імені: ▲2 / ▼1 / NEW (нічого, якщо місце не змінилось або невідомо)
+  function moveBadge(r) {
+    if (!r) return "";
+    if (r.isNew) return ' <span class="mv mv--new" title="Новий у таблиці з учора">NEW</span>';
+    if (r.move > 0) return ` <span class="mv mv--up" title="Піднявся з учора на ${r.move}">▲${r.move}</span>`;
+    if (r.move < 0) return ` <span class="mv mv--down" title="Опустився з учора на ${-r.move}">▼${-r.move}</span>`;
+    return "";
   }
 
   window.Leaderboard = {
@@ -194,5 +267,7 @@
     sundayTop,
     trailSubmit,
     trailTop,
+    moveBadge,
+    withMoves,
   };
 })();

@@ -447,3 +447,12 @@ body.is-home .topbar { display: none; }
 .club-roster[open] summary { border-bottom: 1px solid var(--surface-2); margin-bottom: 8px; }
 .club-roster .leaders__row { background: var(--bg); }
 .club-roster ol { padding-bottom: 10px; }
+
+/* Зміна місця з учора: ▲ піднявся, ▼ опустився, NEW — новий у таблиці */
+.mv { display: inline-block; margin-left: 4px; padding: 1px 5px; border-radius: 6px; font: 700 11px var(--font); vertical-align: 2px; }
+.mv--up { color: #1b7a3f; background: #e3f6ea; }
+.mv--down { color: #c62828; background: #fdeaea; }
+.mv--new { color: #fff; background: var(--brand); letter-spacing: .5px; }
+.lb-past .mv { display: none; }
+.mv-legend { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+.mv-legend .mv { margin: 0 2px 0 0; }

@@ -116,7 +116,7 @@
         (r) => `
         <li class="leaders__row${r.me ? " is-me" : ""}">
           <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}</span>
+          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
           <span></span>
           <span class="leaders__km">${formatTime(r.time)}</span>
         </li>`
@@ -137,7 +137,7 @@
     $("sun-board-list").innerHTML = '<li class="leaders__empty">Завантажую…</li>';
     $("sun-archive").innerHTML = "";
     try {
-      const rows = await Leaderboard.sundayTop(week.id, boardDist, 30);
+      const rows = await Leaderboard.sundayTop(week.id, boardDist, 30, { moves: true, prevWeek: weekInfo(-1).id });
       $("sun-board-list").innerHTML = rows.length ? rowsHtml(rows) : '<li class="leaders__empty">Цього тижня ще ніхто не біг. Будь першим! 🏃</li>';
     } catch (e) {
       $("sun-board-list").innerHTML = '<li class="leaders__empty">Не вдалося завантажити рейтинг 😕</li>';

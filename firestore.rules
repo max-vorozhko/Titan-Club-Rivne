@@ -10,6 +10,7 @@ service cloud.firestore {
       allow create, update: if request.auth != null
         && request.auth.uid == uid
         && validScore(request.resource.data)
+        && dayStartOk('km')
         && (resource == null || request.resource.data.km >= resource.data.km);
       allow delete: if false;
     }
@@ -23,8 +24,19 @@ service cloud.firestore {
         && dist in ['5k', '10k']
         && isCurrentWeek(week)
         && validSunday(request.resource.data, dist == '5k' ? 5 : 10)
+        && dayStartOk('time')
         && (resource == null || request.resource.data.time <= resource.data.time);
       allow delete: if false;
+    }
+
+    // dayStart — результат на початок доби (для позначок ▲/▼/NEW у таблицях): у нового запису null,
+    // далі — попередній результат або попередній dayStart. Поле необов'язкове (старі версії гри його не пишуть).
+    function dayStartOk(field) {
+      return !('dayStart' in request.resource.data)
+        || (resource == null
+          ? request.resource.data.dayStart == null
+          : (request.resource.data.dayStart == resource.data[field]
+            || request.resource.data.dayStart == resource.data.get('dayStart', resource.data[field])));
     }
 
     // Запас у добу з кожного боку покриває різницю між UTC і київським часом
@@ -36,7 +48,7 @@ service cloud.firestore {
 
     // Найшвидший можливий темп у грі ≈ 3:26/км (прискорення + гель), тож менше 200 с/км не буває
     function validSunday(d, km) {
-      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'dayStart', 'updatedAt'])
         && (!('boost' in d) || d.boost is bool)
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
         && d.time is int && d.time >= km * 200 && d.time <= km * 1800
@@ -51,13 +63,14 @@ service cloud.firestore {
         && request.auth.uid == uid
         && dist in ['7k', '13k', '26k']
         && validTrail(request.resource.data, dist == '7k' ? 7 : (dist == '13k' ? 13 : 26))
+        && dayStartOk('time')
         && (resource == null || request.resource.data.time <= resource.data.time);
       allow delete: if false;
     }
 
     // Навіть з темпом, гелем і на спуску швидше ~2:40/км не буває, тож менше 150 с/км відхиляємо
     function validTrail(d, km) {
-      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'dayStart', 'updatedAt'])
         && (!('boost' in d) || d.boost is bool)
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
         && d.time is int && d.time >= km * 150 && d.time <= km * 3600
@@ -196,7 +209,7 @@ service cloud.firestore {
     }
 
     function validScore(d) {
-      return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'dayStart', 'updatedAt'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
         && d.km is number && d.km > 0 && d.km <= 60
         && d.time is number && d.time > 0
