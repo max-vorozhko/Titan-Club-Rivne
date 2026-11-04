@@ -46,7 +46,7 @@
 
   function kyivDay(offsetDays) {
     const d = new Date(Date.now() + (offsetDays || 0) * 864e5);
-    return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv" }).format(d);
+    return Kyiv.iso(d);
   }
 
   // Серія днів: зараховуємо день один раз; пропуск дня — серія з початку

@@ -51,8 +51,8 @@
 
   // Тиждень останньої неділі, що вже настала (сьогодні або раніше) за київським часом
   function lastSunday(now) {
-    const kyiv = new Date((now || new Date()).toLocaleString("en-US", { timeZone: "Europe/Kyiv" }));
-    const today = Date.UTC(kyiv.getFullYear(), kyiv.getMonth(), kyiv.getDate());
+    const w = Kyiv.wall(now);
+    const today = Date.UTC(w.y, w.m - 1, w.d);
     const sunday = today - new Date(today).getUTCDay() * DAY;
     // ISO-рік неділі = рік її четверга
     const year = new Date(sunday - 3 * DAY).getUTCFullYear();
@@ -67,8 +67,7 @@
   }
 
   function formatDate(iso) {
-    const [y, m, d] = iso.split("-").map(Number);
-    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("uk-UA", { day: "numeric", month: "long", timeZone: "UTC" });
+    return Kyiv.dayMonthOfISO(iso);
   }
 
   // ---------- Статистика з публічного документа ----------
