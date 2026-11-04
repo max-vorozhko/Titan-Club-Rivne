@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=28">
+  <link rel="stylesheet" href="css/style.css?v=29">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -28,6 +28,7 @@
       <button class="tabs__btn" data-tab="game" role="tab">Біг</button>
       <button class="tabs__btn" data-tab="sunday" role="tab">Неділя</button>
       <button class="tabs__btn" data-tab="trail" role="tab">Трейл</button>
+      <button class="tabs__btn" data-tab="draw" role="tab">Малюнок</button>
       <button class="tabs__btn" data-tab="leaders" role="tab">Рейтинг</button>
       <button class="tabs__btn" data-tab="club" role="tab">Клуб</button>
       <button class="tabs__btn" data-tab="profile" role="tab">Профіль</button>
@@ -61,6 +62,10 @@
           <button class="home-card" data-go="trail" type="button">
             <span class="home-card__icon">🏔️</span>
             <span class="home-card__text"><b>Трейл</b><small>7, 13 або 26 км з рельєфом: підготовка до вертикалей</small></span>
+          </button>
+          <button class="home-card" data-go="draw" type="button">
+            <span class="home-card__icon">✏️</span>
+            <span class="home-card__text"><b>Малюнок</b><small>Малюнок дня: проведи бігуна по контуру зверху</small></span>
           </button>
           <button class="home-card home-card--club" data-go="club" type="button">
             <span class="home-card__icon">📊</span>
@@ -297,6 +302,57 @@
       </div>
     </section>
 
+    <!-- МАЛЮНОК: вид зверху, бігун малює слово чи картинку по пунктиру -->
+    <section id="tab-draw" class="tab">
+      <div class="panel draw">
+        <div class="dr-top">
+          <div>
+            <h2>Малюнок дня</h2>
+            <p class="muted small-left" id="dr-date"></p>
+          </div>
+          <div class="dr-streak" id="dr-streak"></div>
+        </div>
+        <div class="dr-picker" id="dr-picker" aria-label="Малюнки"></div>
+
+        <div class="dr-hud">
+          <div class="dr-hud__cell"><span class="dr-hud__lbl">Час</span><span class="dr-hud__val" id="dr-time">0:00.0</span></div>
+          <div class="dr-hud__cell"><span class="dr-hud__lbl">Покрито</span><span class="dr-hud__val" id="dr-cover">0%</span></div>
+          <div class="dr-hud__cell"><span class="dr-hud__lbl">Зайвий слід</span><span class="dr-hud__val" id="dr-waste">0%</span></div>
+          <div class="hud__energy dr-energy" id="dr-energy"><div class="hud__energy-fill" id="dr-energy-fill"></div></div>
+        </div>
+
+        <div class="dr-board" id="dr-board">
+          <canvas id="dr-canvas" role="img" aria-label="Вид зверху: пунктир малюнка і слід бігуна"></canvas>
+          <div class="dr-hint" id="dr-hint">Торкнись і веди пальцем</div>
+        </div>
+
+        <div class="dr-controls">
+          <button class="btn btn--primary dr-sprint" id="dr-sprint" type="button">⚡ Темп</button>
+          <button class="btn btn--ghost dr-small" id="dr-finish" type="button" disabled>Фініш</button>
+          <button class="btn btn--ghost dr-small" id="dr-restart" type="button">Спочатку</button>
+        </div>
+        <button class="link dr-help" data-help="help-draw" type="button">❓ Як грати</button>
+
+        <div class="dr-result" id="dr-result" hidden aria-live="polite">
+          <div class="dr-stars" id="dr-stars"></div>
+          <h3 id="dr-title"></h3>
+          <div class="stats">
+            <div class="stat"><span class="stat__val" id="dr-points">0</span><span class="stat__lbl">балів</span></div>
+            <div class="stat"><span class="stat__val" id="dr-rtime">0:00.0</span><span class="stat__lbl">час</span></div>
+            <div class="stat"><span class="stat__val" id="dr-rcover">0%</span><span class="stat__lbl">контур покрито</span></div>
+            <div class="stat"><span class="stat__val" id="dr-best">0</span><span class="stat__lbl">рекорд цього малюнка</span></div>
+          </div>
+          <img class="dr-card" id="dr-card" alt="Картинка результату для сторіс">
+          <div class="overlay__actions">
+            <button class="btn btn--primary" id="dr-again" type="button">Ще раз</button>
+            <button class="btn btn--ghost" id="dr-next" type="button">Наступний</button>
+          </div>
+          <button class="btn btn--ghost" id="dr-share" type="button">Поділитись</button>
+          <div class="share-sheet" id="dr-share-sheet" hidden></div>
+        </div>
+      </div>
+    </section>
+
     <!-- РЕЙТИНГ -->
     <section id="tab-leaders" class="tab">
       <div class="panel">
@@ -417,6 +473,20 @@
     </div>
   </div>
 
+  <div class="modal" id="help-draw" hidden role="dialog" aria-modal="true" aria-labelledby="help-draw-title">
+    <div class="modal__card">
+      <h2 id="help-draw-title">Як грати: Малюнок</h2>
+      <p>Вид зверху на місто. Пунктиром проступає слово чи картинка, а ти ведеш бігуна по контуру.</p>
+      <ul class="howto">
+        <li><b>Торкнись і веди пальцем</b> — бігун біжить у бік пальця (на комп'ютері: тримай кнопку миші, стрілки ← → повертають)</li>
+        <li><b>⚡ Темп</b> — швидше, але витрачає сили (Shift або Пробіл)</li>
+        <li>Бали (до 1000): скільки контуру покрито, мало зайвого сліду і швидкість</li>
+        <li>Малюнок дня щоразу новий; серія — скільки днів поспіль ти його пройшов</li>
+      </ul>
+      <button class="btn btn--primary" data-close type="button">Зрозуміло</button>
+    </div>
+  </div>
+
   <div class="modal" id="help-trail" hidden role="dialog" aria-modal="true" aria-labelledby="help-trail-title">
     <div class="modal__card">
       <h2 id="help-trail-title">Як грати: Трейл</h2>
@@ -436,22 +506,23 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=28"></script>
-  <script src="js/analytics.js?v=28"></script>
-  <script src="js/leaderboard.js?v=28"></script>
-  <script src="js/share.js?v=28"></script>
-  <script src="js/avatar.js?v=28"></script>
-  <script src="js/profile.js?v=28"></script>
-  <script src="js/rewards.js?v=28"></script>
-  <script src="js/game.js?v=28"></script>
-  <script src="js/app.js?v=28"></script>
-  <script src="js/sunday.js?v=28"></script>
-  <script src="js/sunday-ui.js?v=28"></script>
-  <script src="js/trail.js?v=28"></script>
-  <script src="js/trail-ui.js?v=28"></script>
-  <script src="js/profile-ui.js?v=28"></script>
-  <script src="js/club.js?v=28"></script>
-  <script src="js/club-ui.js?v=28"></script>
-  <script src="js/pwa.js?v=28"></script>
+  <script src="js/config.js?v=29"></script>
+  <script src="js/analytics.js?v=29"></script>
+  <script src="js/leaderboard.js?v=29"></script>
+  <script src="js/share.js?v=29"></script>
+  <script src="js/avatar.js?v=29"></script>
+  <script src="js/profile.js?v=29"></script>
+  <script src="js/rewards.js?v=29"></script>
+  <script src="js/game.js?v=29"></script>
+  <script src="js/app.js?v=29"></script>
+  <script src="js/sunday.js?v=29"></script>
+  <script src="js/sunday-ui.js?v=29"></script>
+  <script src="js/trail.js?v=29"></script>
+  <script src="js/trail-ui.js?v=29"></script>
+  <script src="js/draw.js?v=29"></script>
+  <script src="js/profile-ui.js?v=29"></script>
+  <script src="js/club.js?v=29"></script>
+  <script src="js/club-ui.js?v=29"></script>
+  <script src="js/pwa.js?v=29"></script>
 </body>
 </html>
