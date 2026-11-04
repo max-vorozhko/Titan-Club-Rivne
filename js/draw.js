@@ -149,7 +149,7 @@
   let tpl, strokes, pts, geo, par, covered, run;
   let steer = null, steerId = null, sprintHeld = false;
   const keys = { left: false, right: false };
-  let lastBlob = null, lastResult = null, lastUrl = null;
+  let lastBlob = null, lastResult = null, lastUrl = null, lastPlace = null, lastRun = null;
 
   function loadTemplate(i) {
     const t = TEMPLATES[i];
@@ -159,6 +159,8 @@
     geo = geometry(strokes);
     par = ((geo.len + geo.conn) / BASE) * 1.35;
     covered = 0;
+    lastRun = null;
+    lastPlace = null;
     run = {
       state: "idle", x: START.x, y: START.y, a: -Math.PI / 2, t: 0, energy: 1, locked: false, sprinting: false,
       onLen: 0, offLen: 0, trail: [], doneT: 0,
@@ -274,7 +276,10 @@
     if (tpl.index === DAILY && res.points >= 500 && store.days.indexOf(TODAY) < 0) store.days.push(TODAY);
     save();
     if (window.Profile) Profile.record({ mode: "draw" });
+    lastPlace = null;
+    lastRun = { id: tpl.id, name: tpl.name, res };
     showResult(res);
+    submit();
     renderPicker();
     renderStreak();
   }
@@ -301,6 +306,45 @@
     });
     setTimeout(() => $("dr-result").scrollIntoView({ behavior: "smooth", block: "nearest" }), 350);
   }
+
+  // ---------- Рейтинг ----------
+  function lbStatus(text) {
+    $("dr-lb-status").hidden = !text;
+    $("dr-lb-status").textContent = text || "";
+  }
+
+  async function submit() {
+    $("dr-lb-form").hidden = true;
+    lbStatus("");
+    if (!window.Leaderboard || !Leaderboard.enabled || !lastRun) return;
+    if (!Leaderboard.getName()) {
+      $("dr-lb-name").value = "";
+      $("dr-lb-form").hidden = false;
+      return lbStatus("Введи ім'я, щоб потрапити в рейтинг");
+    }
+    const run = lastRun;
+    lbStatus("Зберігаю результат…");
+    try {
+      const r = await Leaderboard.drawSubmit({ id: run.id, points: run.res.points, time: run.res.time });
+      if (lastRun !== run) return; // тим часом почали новий забіг
+      lastPlace = r.place;
+      lbStatus(r.place ? `📊 #${r.place} у рейтингу «${run.name}» (кращий: ${r.best.points} балів)` : "Результат збережено");
+    } catch (e) {
+      if (lastRun === run) lbStatus("Не вдалося зберегти результат 😕");
+    }
+  }
+
+  $("dr-lb-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("dr-lb-name").value.trim();
+    if (name.length < 2) return;
+    Leaderboard.setName(name);
+    submit();
+  });
+
+  const openBoard = () => window.openLeaders && openLeaders("draw", tpl.id);
+  $("dr-open-board").addEventListener("click", openBoard);
+  $("dr-result-board").addEventListener("click", openBoard);
 
   // ---------- Малювання сцени (полотно гри й картинка для сторіс) ----------
   function rrect(g, x, y, w, h, r) {
@@ -532,7 +576,7 @@
       if (!lastResult) return null;
       const r = lastResult;
       return {
-        text: `Малюнок дня Titan Run: ${tpl.name} — ${r.points} балів ${"★".repeat(r.stars)} 🏃✏️ А ти?`,
+        text: `Малюнок дня Titan Run: ${tpl.name} — ${r.points} балів ${"★".repeat(r.stars)}${lastPlace ? ` · #${lastPlace} у рейтингу` : ""} 🏃✏️ А ти?`,
         photo: async () => lastBlob,
         filename: `titan-draw-${tpl.id}.png`,
       };
@@ -561,5 +605,5 @@
   }
   requestAnimationFrame(frame);
 
-  window.DrawUI = { loadTemplate };
+  window.DrawUI = { loadTemplate, dailyId: () => TEMPLATES[DAILY].id };
 })();
