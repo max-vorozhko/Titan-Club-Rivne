@@ -160,79 +160,192 @@
     toastTimer = setTimeout(() => el.classList.remove("is-visible"), 2200);
   }
 
-  // ---------- Бусти «Супер-кросівки» (Firestore profiles/{uid}, промокоди codes/{code}) ----------
-  let boosts = null;
+  // ---------- Гаманець і бусти (Firestore profiles/{uid}) ----------
+  // boosts — «Супер-кросівки» за промокод (скрізь), heads — «Розгін», куплений за монети (лише «Біг»),
+  // coins — монети з «Бігу», earnAt — коли востаннє нараховували (правила обмежують швидкість заробітку),
+  // buyDay/buyN — добовий ліміт купівель розгону за монети.
+  const START_COINS = 50;
+  const HEAD_PRICE = 100; // збігається з правилами Firestore
+  const BUY_LIMIT = 5;
+  const PENDING_KEY = "titan.pendingCoins.v1"; // монети, які не вдалося зберегти (немає зв'язку)
+
+  let wallet = null; // { boosts, heads, coins, buyDay, buyN }
+  let loading = null;
+
+  // Київська доба (як у правилах: UTC+3, без урахування зимового зсуву в 1 годину)
+  const buyDayNow = () => Math.floor((Date.now() + 3 * 3600 * 1000) / 864e5);
 
   async function profileRef() {
     const { db, uid } = await Leaderboard.connect();
     return { db, ref: db.collection("profiles").doc(uid), uid };
   }
 
-  async function refreshBoosts() {
-    if (!Leaderboard.enabled) return (boosts = 0);
+  const stampNow = () => firebase.firestore.FieldValue.serverTimestamp();
+
+  function toWallet(d) {
+    return { boosts: d.boosts || 0, heads: d.heads || 0, coins: d.coins || 0, buyDay: d.buyDay || 0, buyN: d.buyN || 0 };
+  }
+
+  // Читає профіль; новачкові створює гаманець зі стартовими монетами, старому профілю (з бустами) додає гаманець
+  async function loadWallet() {
+    if (!Leaderboard.enabled) return (wallet = toWallet({}));
+    if (loading) return loading;
+    loading = (async () => {
+      try {
+        const { ref } = await profileRef();
+        const snap = await ref.get();
+        let data = snap.exists ? snap.data() : null;
+        if (!data || data.coins === undefined) {
+          const base = data ? { ...data } : { boosts: 0 };
+          data = { ...base, coins: START_COINS, heads: 0, earnAt: stampNow(), updatedAt: stampNow() };
+          await ref.set(data);
+          data = (await ref.get()).data();
+        }
+        wallet = toWallet(data);
+        await flushPending();
+      } catch (e) {
+        wallet = wallet || toWallet({});
+      }
+      return wallet;
+    })();
     try {
-      const { ref } = await profileRef();
-      const snap = await ref.get();
-      boosts = snap.exists ? snap.data().boosts || 0 : 0;
-    } catch (e) {
-      boosts = boosts || 0;
+      return await loading;
+    } finally {
+      loading = null;
     }
-    return boosts;
+  }
+
+  const refreshBoosts = async () => (await loadWallet()).boosts;
+
+  // Монети, які не вдалося записати, чекають у пам'яті пристрою до наступного разу
+  const readPending = () => {
+    try {
+      return Math.max(0, parseInt(localStorage.getItem(PENDING_KEY), 10) || 0);
+    } catch (e) {
+      return 0;
+    }
+  };
+  const writePending = (n) => {
+    try {
+      localStorage.setItem(PENDING_KEY, String(n));
+    } catch (e) {}
+  };
+
+  async function flushPending() {
+    const n = readPending();
+    if (!n) return;
+    try {
+      await writeCoins(n);
+      writePending(0);
+    } catch (e) {}
+  }
+
+  async function writeCoins(n) {
+    const { ref } = await profileRef();
+    const snap = await ref.get();
+    if (!snap.exists || snap.data().coins === undefined) throw new Error("no_wallet");
+    const data = snap.data();
+    await ref.set({ ...data, coins: data.coins + n, earnAt: stampNow(), updatedAt: stampNow() });
+    wallet = toWallet({ ...data, coins: data.coins + n });
+  }
+
+  /** Монети за забіг у «Бігу»: додаємо в гаманець (якщо не вийшло — запам'ятовуємо на потім) */
+  async function earnCoins(n) {
+    n = Math.floor(n);
+    if (!Leaderboard.enabled || !(n > 0)) return wallet;
+    try {
+      await loadWallet(); // створить гаманець, якщо його ще немає
+      await writeCoins(n + readPending());
+      writePending(0);
+    } catch (e) {
+      writePending(readPending() + n);
+    }
+    return wallet;
+  }
+
+  // Скільки розгонів за монети ще можна купити сьогодні
+  function buysLeft() {
+    const w = wallet || toWallet({});
+    return w.buyDay === buyDayNow() ? Math.max(0, BUY_LIMIT - w.buyN) : BUY_LIMIT;
+  }
+
+  /** Купівля «Розгону» за монети: −100 монет, +1 розгін, до 5 на добу */
+  async function buyHead() {
+    const w = await loadWallet();
+    if (w.coins < HEAD_PRICE) throw new Error("no_coins");
+    if (!buysLeft()) throw new Error("limit");
+    const { ref } = await profileRef();
+    const snap = await ref.get();
+    const data = snap.data();
+    const day = buyDayNow();
+    const buyN = data.buyDay === day ? (data.buyN || 0) + 1 : 1;
+    const next = { ...data, coins: data.coins - HEAD_PRICE, heads: (data.heads || 0) + 1, buyDay: day, buyN, updatedAt: stampNow() };
+    await ref.set(next);
+    wallet = toWallet(next);
+    return wallet;
   }
 
   // Активація: в одній транзакції позначаємо код використаним і додаємо буст; правила бази перевіряють обидва кроки
   async function redeem(raw) {
     const code = String(raw || "").trim().toUpperCase();
     if (!/^[A-Z0-9-]{6,40}$/.test(code)) throw new Error("bad_code");
+    await loadWallet();
     const { db, ref, uid } = await profileRef();
-    const stamp = firebase.firestore.FieldValue.serverTimestamp();
     const snap = await ref.get();
-    const current = snap.exists ? snap.data().boosts || 0 : 0;
+    const data = snap.exists ? snap.data() : { boosts: 0 };
     const batch = db.batch();
-    batch.update(db.collection("codes").doc(code), { used: true, usedBy: uid, usedAt: stamp });
-    batch.set(ref, { boosts: current + 1, lastCode: code, updatedAt: stamp });
+    batch.update(db.collection("codes").doc(code), { used: true, usedBy: uid, usedAt: stampNow() });
+    batch.set(ref, { ...data, boosts: (data.boosts || 0) + 1, lastCode: code, updatedAt: stampNow() });
     try {
       await batch.commit();
     } catch (e) {
       throw new Error("invalid_code");
     }
-    boosts = current + 1;
-    return boosts;
+    wallet = toWallet({ ...data, boosts: (data.boosts || 0) + 1 });
+    return wallet.boosts;
   }
 
-  // Списати один буст на старті забігу
-  async function useBoost() {
+  // Списати один буст на старті забігу; kind "head" — спершу розгін за монети, потім промокодний буст
+  async function useBoost(kind) {
     const { ref } = await profileRef();
     const snap = await ref.get();
     const data = snap.exists ? snap.data() : null;
-    if (!data || !data.boosts) throw new Error("no_boosts");
-    await ref.set({ boosts: data.boosts - 1, lastCode: data.lastCode, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-    boosts = data.boosts - 1;
-    return boosts;
+    if (!data) throw new Error("no_boosts");
+    let next;
+    if (kind === "head" && data.heads > 0) next = { ...data, heads: data.heads - 1 };
+    else if (data.boosts > 0) next = { ...data, boosts: data.boosts - 1 };
+    else throw new Error("no_boosts");
+    next.updatedAt = stampNow();
+    await ref.set(next);
+    wallet = toWallet(next);
+    return wallet;
   }
 
-  // ---------- Перемикач «Взути супер-кросівки» на старті «Неділі» й «Трейлу» ----------
+  // ---------- Перемикач «Взути супер-кросівки» («Неділя», «Трейл») і «Розгін» («Біг») ----------
 
-  async function renderBoostToggle(label) {
-    const n = Leaderboard.enabled ? await refreshBoosts() : 0;
+  const forKind = (kind, w) => (kind === "head" ? w.heads + w.boosts : w.boosts);
+
+  async function renderBoostToggle(label, kind) {
+    const n = Leaderboard.enabled ? forKind(kind, await loadWallet()) : 0;
     label.hidden = !n;
     label.querySelector("input").checked = false;
     label.querySelector("small").textContent = `залишилось ${n}`;
   }
 
   // Списує буст, якщо гравець його вибрав; повертає true, якщо забіг буде з бустом
-  async function takeBoost(label) {
+  async function takeBoost(label, kind) {
     const input = label.querySelector("input");
     if (label.hidden || !input.checked) return false;
     input.checked = false;
     try {
-      const left = await useBoost();
+      const w = await useBoost(kind);
+      const left = forKind(kind, w);
       label.querySelector("small").textContent = `залишилось ${left}`;
       label.hidden = !left;
-      toast("⚡ Супер-кросівки взуто на цей забіг!");
+      toast(kind === "head" ? "⚡ Розгін увімкнено на цей забіг!" : "⚡ Супер-кросівки взуто на цей забіг!");
       return true;
     } catch (e) {
-      toast("Не вдалося взути супер-кросівки 😕");
+      toast("Не вдалося увімкнути буст 😕");
       return false;
     }
   }
@@ -250,7 +363,15 @@
     bestRuns,
     placed,
     toast,
-    boosts: () => boosts,
+    boosts: () => (wallet ? wallet.boosts : null),
+    wallet: () => wallet,
+    loadWallet,
+    earnCoins,
+    buyHead,
+    buysLeft,
+    HEAD_PRICE,
+    BUY_LIMIT,
+    START_COINS,
     refreshBoosts,
     redeem,
     useBoost,

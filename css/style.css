@@ -318,6 +318,10 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .boost-toggle small { font-weight: 600; color: var(--muted); }
 .boost-mark { font-size: 14px; }
+.wallet { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; font-weight: 700; }
+.wallet small { color: var(--muted); font-weight: 600; }
+.wallet__gain { color: var(--brand); }
+.wallet .btn--small { font-size: 15px; padding: 8px 18px; }
 
 /* «Біг»: порівняння з рекордом і «Мої найкращі» */
 .overlay__vs { margin: 2px 0 0; font-weight: 700; color: var(--ink); }

@@ -88,9 +88,29 @@
   }
 
   async function renderBoosts() {
-    const n = await Profile.refreshBoosts();
-    $("profile-boosts").textContent = n;
+    const w = await Profile.loadWallet();
+    $("profile-boosts").textContent = w.boosts;
+    $("profile-coins").textContent = w.coins;
+    $("profile-heads").textContent = w.heads;
+    const left = Profile.buysLeft();
+    const btn = $("profile-buy-head");
+    btn.disabled = !left || w.coins < Profile.HEAD_PRICE;
+    btn.textContent = !left
+      ? `Ліміт на сьогодні: ${Profile.BUY_LIMIT} розгонів`
+      : w.coins < Profile.HEAD_PRICE
+        ? `Розгін за ${Profile.HEAD_PRICE} 🪙: ще ${Profile.HEAD_PRICE - w.coins}`
+        : `Купити розгін за ${Profile.HEAD_PRICE} 🪙 (сьогодні ще ${left})`;
   }
+
+  $("profile-buy-head").addEventListener("click", async () => {
+    try {
+      await Profile.buyHead();
+      Profile.toast("⚡ Розгін куплено! Він чекає в «Бігу».");
+    } catch (err) {
+      Profile.toast(err.message === "limit" ? "Ліміт на сьогодні вичерпано" : err.message === "no_coins" ? "Не вистачає монет" : "Не вдалося купити 😕");
+    }
+    renderBoosts();
+  });
 
   function renderDonate() {
     const link = $("profile-donate");

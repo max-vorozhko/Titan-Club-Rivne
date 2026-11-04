@@ -141,7 +141,7 @@
       Profile.record({ mode: "game", km: result.km, boost: result.boost });
       renderVs(result.km, prevBest, isRecord);
       renderBestRuns();
-      renderGameBoosts();
+      earnAndRender(result.coins);
       prepareSubmit(result);
       // Невелика пауза, щоб випадковий тап не перезапустив гру одразу
       setTimeout(() => ($("screen-over").hidden = false), 450);
@@ -179,7 +179,7 @@
     const hint = $("over-boost-hint");
     const far = !isRecord && diff >= 5;
     hint.hidden = !far;
-    if (far) hint.innerHTML = `До рекорду далеко. Спробуй з ⚡ розгоном: старт зі швидкістю 3-го км.${Profile.boosts() ? "" : ' <button class="link" data-goto-boost type="button">Отримати →</button>'}`;
+    if (far) hint.innerHTML = `До рекорду далеко. Спробуй з ⚡ розгоном: старт зі швидкістю 3-го км.${hasHeads() ? "" : ' <button class="link" data-goto-boost type="button">Отримати →</button>'}`;
   }
 
   function renderBestRuns() {
@@ -196,13 +196,55 @@
     });
   }
 
-  function renderGameBoosts() {
-    ["start", "over"].forEach((where) => Profile.renderBoostToggle($("game-boost-" + where)));
-    // Реклама розгону лише там, де в гравця немає бустів
-    Promise.resolve(Profile.refreshBoosts()).then((n) => {
-      $("game-promo").hidden = !Leaderboard.enabled || n > 0;
+  const hasHeads = () => {
+    const w = Profile.wallet();
+    return !!w && w.heads + w.boosts > 0;
+  };
+
+  // Рядок гаманця: баланс і кнопка купівлі розгону за монети
+  function renderWallet(gain) {
+    const w = Profile.wallet();
+    ["start", "over"].forEach((where) => {
+      const el = $("wallet-" + where);
+      el.hidden = !Leaderboard.enabled || !w;
+      if (el.hidden) return;
+      const price = Profile.HEAD_PRICE;
+      const left = Profile.buysLeft();
+      const gainText = where === "over" && gain > 0 ? `<span class="wallet__gain">+${gain}</span> ` : "";
+      let action;
+      if (!left) action = `<small>ліміт на сьогодні: ${Profile.BUY_LIMIT} розгонів</small>`;
+      else if (w.coins < price) action = `<small>на розгін ще ${price - w.coins} 🪙</small>`;
+      else action = `<button class="btn btn--small" data-buy-head type="button">Купити розгін · ${price} 🪙</button>`;
+      el.innerHTML = `<span>${gainText}🪙 <b>${w.coins}</b></span>${action}`;
     });
   }
+
+  async function renderGameBoosts() {
+    await Profile.loadWallet();
+    ["start", "over"].forEach((where) => Profile.renderBoostToggle($("game-boost-" + where), "head"));
+    renderWallet();
+    // Реклама розгону лише там, де в гравця немає розгонів і бустів
+    $("game-promo").hidden = !Leaderboard.enabled || hasHeads();
+  }
+
+  async function earnAndRender(coins) {
+    await Profile.earnCoins(coins);
+    await renderGameBoosts();
+    renderWallet(Math.floor(coins));
+  }
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-buy-head]");
+    if (!btn) return;
+    btn.disabled = true;
+    try {
+      await Profile.buyHead();
+      ui.toast("⚡ Розгін куплено!");
+    } catch (err) {
+      ui.toast(err.message === "limit" ? "Ліміт на сьогодні вичерпано" : err.message === "no_coins" ? "Не вистачає монет" : "Не вдалося купити 😕");
+    }
+    renderGameBoosts();
+  });
 
   const game = new TitanGame($("game-canvas"), ui);
   $("best-start").textContent = getBest().toFixed(2);
@@ -241,7 +283,7 @@
     }
     $("share-sheet").hidden = true;
     // Розгін вмикається галочкою на тому екрані, з якого стартуємо (стартовий або після забігу)
-    const boosted = await Profile.takeBoost($(!$("screen-over").hidden ? "game-boost-over" : "game-boost-start"));
+    const boosted = await Profile.takeBoost($(!$("screen-over").hidden ? "game-boost-over" : "game-boost-start"), "head");
     $("screen-start").hidden = true;
     $("screen-over").hidden = true;
     $("hud").hidden = false;
