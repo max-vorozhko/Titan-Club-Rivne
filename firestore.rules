@@ -248,28 +248,90 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.lastCode == code;
     }
 
-    // Бусти гравця profiles/{uid}: +1 лише разом із погашенням нового коду, −1 — на старті забігу
+    // Гаманець і бусти гравця profiles/{uid}. Кожен запис — рівно одна з дій, решта полів не змінюється:
+    //   • новачок: стартові 50 монет (create), старий профіль без монет: те саме (update);
+    //   • промокод: boosts +1 разом із погашенням коду;
+    //   • буст на старті: boosts −1 («Супер-кросівки») або heads −1 («Розгін» у «Бігу»);
+    //   • заробіток: монети з «Бігу». Приріст не більший, ніж гравець міг зібрати за час після попереднього
+    //     нарахування (≤ 1.2 монети/с + 30 запасу; чесний максимум ≈ 0.6/с);
+    //   • купівля «Розгону»: −100 монет, heads +1, не більше 5 на добу (buyDay — доба за київським часом, UTC+3).
     match /profiles/{uid} {
       allow get: if request.auth != null && request.auth.uid == uid;
       allow create: if request.auth != null && request.auth.uid == uid
         && validProfile(request.resource.data)
-        && request.resource.data.boosts == 1
-        && redeemedNow(request.resource.data.lastCode);
+        && (
+          (request.resource.data.boosts == 0
+            && request.resource.data.coins == 50
+            && request.resource.data.get('heads', 0) == 0
+            && request.resource.data.earnAt == request.time
+            && !('lastCode' in request.resource.data)
+            && !('buyDay' in request.resource.data) && !('buyN' in request.resource.data))
+          // старі версії гри (без гаманця): перший промокод
+          || (request.resource.data.boosts == 1
+            && !('coins' in request.resource.data)
+            && redeemedNow(request.resource.data.lastCode))
+        );
       allow update: if request.auth != null && request.auth.uid == uid
         && validProfile(request.resource.data)
         && (
-          (request.resource.data.boosts == resource.data.boosts - 1
-            && request.resource.data.lastCode == resource.data.lastCode)
+          // гаманець створюється для старого профілю
+          (!('coins' in resource.data)
+            && request.resource.data.coins == 50
+            && request.resource.data.get('heads', 0) == 0
+            && request.resource.data.earnAt == request.time
+            && same('boosts', 0) && same('lastCode', ''))
+          // «Супер-кросівки» на старті
+          || (request.resource.data.boosts == resource.data.boosts - 1
+            && same('lastCode', '') && sameWallet())
+          // «Розгін» на старті
+          || (request.resource.data.get('heads', 0) == resource.data.get('heads', 0) - 1
+            && same('boosts', 0) && same('lastCode', '') && same('coins', 0) && same('earnAt', null)
+            && same('buyDay', 0) && same('buyN', 0))
+          // промокод
           || (request.resource.data.boosts == resource.data.boosts + 1
-            && request.resource.data.lastCode != resource.data.lastCode
-            && redeemedNow(request.resource.data.lastCode))
+            && request.resource.data.get('lastCode', '') != resource.data.get('lastCode', '')
+            && redeemedNow(request.resource.data.lastCode)
+            && sameWallet())
+          // заробіток монет
+          || (resource.data.get('earnAt', null) != null
+            && request.resource.data.get('coins', 0) > resource.data.get('coins', 0)
+            && request.resource.data.get('coins', 0) - resource.data.get('coins', 0)
+              <= 30 + (request.time - resource.data.earnAt).seconds() * 1.2
+            && request.resource.data.earnAt == request.time
+            && same('boosts', 0) && same('lastCode', '') && same('heads', 0)
+            && same('buyDay', 0) && same('buyN', 0))
+          // купівля «Розгону»
+          || (request.resource.data.get('coins', 0) == resource.data.get('coins', 0) - 100
+            && request.resource.data.get('heads', 0) == resource.data.get('heads', 0) + 1
+            && request.resource.data.buyDay >= resource.data.get('buyDay', 0)
+            && request.resource.data.buyDay <= math.floor((request.time.toMillis() + 10800000) / 86400000)
+            && request.resource.data.buyDay >= math.floor((request.time.toMillis() + 10800000) / 86400000) - 1
+            && request.resource.data.buyN == (request.resource.data.buyDay == resource.data.get('buyDay', 0)
+              ? resource.data.get('buyN', 0) + 1 : 1)
+            && request.resource.data.buyN <= 5
+            && same('boosts', 0) && same('lastCode', '') && same('earnAt', null))
         );
     }
 
+    // Поле не змінилося (відсутнє поле = значення за замовчуванням)
+    function same(field, fallback) {
+      return request.resource.data.get(field, fallback) == resource.data.get(field, fallback);
+    }
+
+    // Усі поля гаманця без змін
+    function sameWallet() {
+      return same('coins', 0) && same('heads', 0) && same('earnAt', null) && same('buyDay', 0) && same('buyN', 0);
+    }
+
     function validProfile(d) {
-      return d.keys().hasOnly(['boosts', 'lastCode', 'updatedAt'])
+      return d.keys().hasOnly(['boosts', 'lastCode', 'coins', 'heads', 'earnAt', 'buyDay', 'buyN', 'updatedAt'])
         && d.boosts is int && d.boosts >= 0 && d.boosts <= 100
-        && d.lastCode is string && d.lastCode.size() <= 40
+        && (!('lastCode' in d) || (d.lastCode is string && d.lastCode.size() <= 40))
+        && (!('coins' in d) || (d.coins is int && d.coins >= 0 && d.coins <= 100000))
+        && (!('heads' in d) || (d.heads is int && d.heads >= 0 && d.heads <= 100))
+        && (!('earnAt' in d) || d.earnAt is timestamp)
+        && (!('buyDay' in d) || d.buyDay is int)
+        && (!('buyN' in d) || (d.buyN is int && d.buyN >= 0 && d.buyN <= 5))
         && d.updatedAt == request.time;
     }
 
