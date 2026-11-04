@@ -310,6 +310,11 @@ main { flex: 1; display: flex; min-height: 0; }
 .boost-card .btn--wide { margin: 6px 0; text-align: center; text-decoration: none; display: block; }
 .boost-card .lb-form { width: 100%; margin-top: 8px; }
 .boost-card__count { font-size: 18px; }
+.boost-card + .boost-card { margin-top: 16px; padding-top: 16px; border-top: 2px dashed var(--surface-2); }
+.boost-card__title { margin: 0 0 6px; font: 700 20px var(--font-display); text-transform: uppercase; letter-spacing: .5px; }
+.lb-form--col { flex-direction: column; align-items: stretch; }
+.boost-card__rewards { display: flex; gap: 8px; flex-wrap: wrap; }
+.boost-card__rewards .btn { flex: 1 1 140px; }
 .profile__bonus { margin-top: 24px; }
 
 .boost-toggle {

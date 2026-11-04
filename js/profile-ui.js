@@ -158,11 +158,12 @@
     e.preventDefault();
     const input = $("profile-code");
     if (!Leaderboard.enabled) return Profile.toast("Активація промокодів поки недоступна");
+    const reward = e.submitter && e.submitter.dataset.reward === "coins" ? "coins" : "boost";
     try {
-      const n = await Profile.redeem(input.value);
+      await Profile.redeem(input.value, reward);
       input.value = "";
-      $("profile-boosts").textContent = n;
-      Profile.toast("⚡ Промокод активовано: +1 супер-кросівки!");
+      renderBoosts();
+      Profile.toast(reward === "coins" ? `🪙 Промокод активовано: +${Profile.PROMO_COINS} монет!` : "⚡ Промокод активовано: +1 буст!");
     } catch (err) {
       Profile.toast("Промокод недійсний або вже використаний 😕");
     }
