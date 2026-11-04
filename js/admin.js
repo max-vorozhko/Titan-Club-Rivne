@@ -347,6 +347,80 @@
     }
   }
 
+  // ---------- Входи через Google: прив'язка пошти до атлета ----------
+
+  let logins = []; // [{uid, email, displayName, nick, lastSeen, athleteId}]
+
+  const words = (s) => String(s || "").toLowerCase().split(/[^a-zа-яіїєґ']+/i).filter((w) => w.length > 1);
+
+  // Підказка: атлет, чиє ім'я найбільше збігається з іменем у Google чи з ніком у грі
+  function guessAthlete(l) {
+    const mine = new Set([...words(l.displayName), ...words(l.nick)]);
+    let best = null, bestScore = 0;
+    athletes.forEach((a) => {
+      const score = words(a.name).filter((w) => mine.has(w)).length;
+      if (score > bestScore) { best = a; bestScore = score; }
+    });
+    return best;
+  }
+
+  async function loadUsers() {
+    try {
+      const snap = await db.collection("logins").get();
+      logins = snap.docs
+        .map((d) => ({ uid: d.id, ...d.data() }))
+        .sort((a, b) => (b.lastSeen && a.lastSeen ? b.lastSeen.toMillis() - a.lastSeen.toMillis() : 0));
+      renderUsers();
+    } catch (e) {
+      status("usr-status", "Не вдалося завантажити список 😕", true);
+    }
+  }
+
+  function renderUsers() {
+    const q = $("usr-search").value.trim().toLowerCase();
+    const unlinked = logins.filter((l) => !l.athleteId).length;
+    $("usr-tab").textContent = unlinked ? `Входи (${unlinked})` : "Входи";
+    const byId = new Map(athletes.map((a) => [a.id, a]));
+    const list = logins.filter((l) => !q || [l.email, l.displayName, l.nick].some((t) => String(t || "").toLowerCase().includes(q)));
+    $("usr-list").innerHTML = list.length
+      ? list
+          .map((l) => {
+            const when = l.lastSeen && l.lastSeen.toDate ? l.lastSeen.toDate().toLocaleDateString("uk-UA", { day: "numeric", month: "short" }) : "";
+            const meta = [l.displayName, l.nick ? "нік у грі: " + l.nick : "", when ? "востаннє " + when : ""].filter(Boolean).map(escapeHtml).join(" · ");
+            const linked = l.athleteId ? byId.get(l.athleteId) : null;
+            let action;
+            if (l.athleteId) {
+              action = `<span class="adm-user__linked">✓ ${escapeHtml(linked ? linked.name : "атлет видалений")}</span><button class="link adm-danger" data-unlink="${l.uid}" type="button">відв'язати</button>`;
+            } else {
+              const guess = guessAthlete(l);
+              const options = ['<option value="">Обрати учасника…</option>']
+                .concat(athletes.map((a) => `<option value="${a.id}"${guess && guess.id === a.id ? " selected" : ""}>${escapeHtml(a.name)}${a.active ? "" : " (вибув)"}</option>`))
+                .join("");
+              action = `<select class="adm-user__select" data-pick="${l.uid}" aria-label="Учасник клубу">${options}</select><button class="btn btn--small" data-link="${l.uid}" type="button">Прив'язати</button>`;
+            }
+            return `<li class="adm-user${l.athleteId ? " is-linked" : ""}">
+              <div class="adm-user__who"><b>${escapeHtml(l.email)}</b><small>${meta}</small></div>
+              <div class="adm-user__act">${action}</div>
+            </li>`;
+          })
+          .join("")
+      : '<li class="muted">Поки ніхто не входив через Google.</li>';
+  }
+
+  async function linkUser(uid, athleteId) {
+    const ref = db.collection("logins").doc(uid);
+    const stamp = FV.serverTimestamp();
+    try {
+      await ref.update(athleteId ? { athleteId, linkedAt: stamp, linkedBy: user.email } : { athleteId: FV.delete(), linkedAt: FV.delete(), linkedBy: FV.delete() });
+      const l = logins.find((x) => x.uid === uid);
+      if (l) l.athleteId = athleteId || "";
+      status("usr-status", athleteId ? "✓ Прив'язано. Учасник побачить справжні імена, коли відкриє «Клуб»." : "Прив'язку знято");
+      renderUsers();
+    } catch (e) {
+      status("usr-status", "Не вдалося зберегти 😕", true);
+    }
+  }
+
   // ---------- Промокоди (лише власник) ----------
 
   function newCode() {
@@ -571,8 +645,9 @@
     const btn = e.target.closest("[data-pane]");
     if (!btn) return;
     $("adm-tabs").querySelectorAll(".seg__btn").forEach((b) => b.classList.toggle("is-active", b === btn));
-    ["runs", "athletes", "codes", "sheet"].forEach((p) => ($("pane-" + p).hidden = p !== btn.dataset.pane));
+    ["runs", "athletes", "users", "codes", "sheet"].forEach((p) => ($("pane-" + p).hidden = p !== btn.dataset.pane));
     if (btn.dataset.pane === "codes") loadCodes();
+    if (btn.dataset.pane === "users") loadUsers();
   });
 
   $("run-week").addEventListener("change", () => {
@@ -627,6 +702,18 @@
     } catch (err) {
       status("ath-status", "Не вдалося зберегти 😕", true);
     }
+  });
+
+  $("usr-search").addEventListener("input", renderUsers);
+  $("usr-list").addEventListener("click", (e) => {
+    const link = e.target.closest("[data-link]");
+    if (link) {
+      const pick = $("usr-list").querySelector(`[data-pick="${link.dataset.link}"]`);
+      if (!pick.value) return status("usr-status", "Спершу оберіть учасника клубу", true);
+      return linkUser(link.dataset.link, pick.value);
+    }
+    const un = e.target.closest("[data-unlink]");
+    if (un) linkUser(un.dataset.unlink, null);
   });
 
   $("code-generate").addEventListener("click", generateCodes);

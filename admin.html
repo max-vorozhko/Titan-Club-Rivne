@@ -15,8 +15,8 @@
   <meta name="apple-mobile-web-app-title" content="Titan Адмін">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=32">
-  <link rel="stylesheet" href="css/admin.css?v=32">
+  <link rel="stylesheet" href="css/style.css?v=33">
+  <link rel="stylesheet" href="css/admin.css?v=33">
 </head>
 <body class="admin-page">
   <header class="adm-head">
@@ -57,6 +57,7 @@
       <nav class="seg adm-tabs" id="adm-tabs">
         <button class="seg__btn is-active" data-pane="runs" type="button"><i>✅</i>Неділі</button>
         <button class="seg__btn" data-pane="athletes" type="button"><i>👥</i>Атлети</button>
+        <button class="seg__btn" data-pane="users" type="button"><i>🔑</i><span id="usr-tab">Входи</span></button>
         <button class="seg__btn" data-pane="codes" type="button" hidden id="adm-tab-codes"><i>🎟</i>Промокоди</button>
         <button class="seg__btn" data-pane="sheet" type="button"><i>⇅</i>Таблиця</button>
       </nav>
@@ -111,6 +112,17 @@
         </div>
       </section>
 
+      <!-- Входи через Google: прив'язка пошти до атлета -->
+      <section class="adm-pane" id="pane-users" hidden>
+        <div class="adm-card">
+          <h2>Хто увійшов через Google</h2>
+          <p class="muted">Це гравці, які вирішили увійти зі своєю поштою. Прив'яжіть пошту до учасника клубу: тоді він бачить у вкладці «Клуб» справжні імена замість персонажів. Без прив'язки нічого не відкривається.</p>
+          <input class="lb-form__input" id="usr-search" type="search" placeholder="Пошук за поштою чи іменем" aria-label="Пошук">
+          <ul class="adm-users" id="usr-list"></ul>
+          <p class="adm-status" id="usr-status"></p>
+        </div>
+      </section>
+
       <!-- Промокоди: лише власник -->
       <section class="adm-pane" id="pane-codes" hidden>
         <div class="adm-card">
@@ -153,8 +165,8 @@
 
   <div class="toast toast--global" id="global-toast"></div>
 
-  <script src="js/config.js?v=32"></script>
-  <script src="js/club.js?v=32"></script>
-  <script src="js/admin.js?v=32"></script>
+  <script src="js/config.js?v=33"></script>
+  <script src="js/club.js?v=33"></script>
+  <script src="js/admin.js?v=33"></script>
 </body>
 </html>

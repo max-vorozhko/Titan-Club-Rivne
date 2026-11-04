@@ -13,6 +13,11 @@
     return `<div class="stat"><span class="stat__val">${value}</span><span class="stat__lbl">${label}</span></div>`;
   }
 
+  // Хто дивиться: прив'язаний учасник клубу бачить справжні імена, решта — вигаданих персонажів
+  let viewerId = "";
+  const who = (a) => `${a.emoji ? escapeHtml(a.emoji) + " " : ""}${escapeHtml(a.persona)}`;
+  const whoText = (a) => `${a.emoji ? a.emoji + " " : ""}${a.persona}`;
+
   const MONTHS = ["січ", "лют", "бер", "кві", "тра", "чер", "лип", "сер", "вер", "жов", "лис", "гру"];
   const monthOf = (iso) => Number(iso.slice(5, 7)) - 1;
   const people = (n) => `${n} ${plural(n, "учасник", "учасники", "учасників")}`;
@@ -86,11 +91,11 @@
         ${rows
           .map(
             (a) => `<div class="club-heat__row">
-              <span class="club-heat__who" title="${escapeHtml(a.persona)}">${escapeHtml(a.emoji)} ${escapeHtml(a.persona)}</span>
+              <span class="club-heat__who${a.id === viewerId ? " is-me" : ""}" title="${escapeHtml(a.persona)}">${who(a)}</span>
               <span class="club-heat__cells">${runs
                 .map((r, i) => {
                   const on = sets[i].has(a.id);
-                  return `<button class="club-cell${on ? " on" : ""}" type="button" data-info="${escapeHtml(`${a.emoji} ${a.persona} · тиждень ${r.week}, ${Club.formatDate(r.date)}: ${on ? "був ✓" : "не був"}`)}"></button>`;
+                  return `<button class="club-cell${on ? " on" : ""}" type="button" data-info="${escapeHtml(`${whoText(a)} · тиждень ${r.week}, ${Club.formatDate(r.date)}: ${on ? "був ✓" : "не був"}`)}"></button>`;
                 })
                 .join("")}</span>
             </div>`
@@ -147,15 +152,44 @@
 
   function row(place, a, right, sub, m) {
     return `
-      <li class="leaders__row">
+      <li class="leaders__row${a.id === viewerId ? " is-me" : ""}">
         <span class="leaders__place">${MEDALS[place - 1] || place}</span>
-        <span class="leaders__name">${escapeHtml(a.emoji)} ${escapeHtml(a.persona)}${badge(m)}<small class="club-sub">${sub}</small></span>
+        <span class="leaders__name">${who(a)}${a.id === viewerId ? " <small>(ти)</small>" : ""}${badge(m)}<small class="club-sub">${sub}</small></span>
         <span></span>
         <span class="leaders__km">${right}</span>
       </li>`;
   }
 
-  function render(pub) {
+  // Блок «Мої неділі» для прив'язаного учасника
+  function mine(s, year, held) {
+    const me = s.athletes.find((a) => a.id === viewerId);
+    if (!me) return "";
+    const place = s.athletes.filter((a) => a.yearCount > me.yearCount).length + 1;
+    const next = window.nextReward ? window.nextReward(me.yearCount) : null;
+    return `
+      <h3 class="profile__sub">Мої неділі · ${year}</h3>
+      <div class="stats club-tiles">
+        ${tile(`${me.yearCount} з ${held}`, "пробіжок")}
+        ${tile(`${held ? Math.round((me.yearCount / held) * 100) : 0}%`, "відвідуваність")}
+        ${tile(me.streak, "поспіль зараз")}
+        ${tile(`#${place}`, `місце з ${s.athletes.filter((a) => a.yearCount > 0).length}`)}
+      </div>
+      <p class="muted small-left">${next ? `До нагороди «${escapeHtml(next.name)}» ${next.icon} ще ${next.runs - me.yearCount} ${plural(next.runs - me.yearCount, "пробіжка", "пробіжки", "пробіжок")}.` : "Ти отримав усі нагороди програми 🏁"}</p>`;
+  }
+
+  function render(pub, names, meId) {
+    viewerId = names && meId ? meId : "";
+    if (names && pub) {
+      // Справжні імена замість персонажів (вигадані лишаємо, якщо імені немає)
+      const athletes = {};
+      Object.entries(pub.athletes || {}).forEach(([id, a]) => {
+        athletes[id] = names[id] ? { ...a, p: names[id].name, e: "" } : a;
+      });
+      pub = { ...pub, athletes };
+    }
+    $("club-lead").textContent = viewerId
+      ? "Відвідуваність недільних пробіжок Titan Club Rivne. Ти бачиш справжні імена, бо ти в клубі."
+      : "Відвідуваність недільних пробіжок Titan Club Rivne. Щоб зберегти приватність, імена замінені на вигаданих персонажів.";
     const s = Club.stats(pub);
     if (!s.held) {
       $("club-body").innerHTML = '<p class="leaders__empty">Скоро тут з\'явиться статистика недільних пробіжок клубу 🏃</p>';
@@ -182,6 +216,7 @@
         ${tile(num(s.avg), "у середньому")}
         ${tile(record.count, `рекорд · тиждень ${record.week}`)}
       </div>
+      ${viewerId ? mine(s, year, yearRuns.length) : ""}
       ${rewards(s.athletes, year)}
       ${chart(yearRuns, year)}
       <h3 class="profile__sub">Найвірніші</h3>
@@ -199,7 +234,11 @@
       }
       ${heatmap(s.athletes, yearRuns, year)}
       ${roster(s.athletes, yearRuns.length, yearRuns[yearRuns.length - 1])}
-      <p class="muted small-left club-foot">Дані вносять адміни клубу після кожної неділі. Справжні імена замінені на вигаданих персонажів.</p>`;
+      <p class="muted small-left club-foot">Дані вносять адміни клубу після кожної неділі.${
+        viewerId || !(window.Account && Account.enabled())
+          ? ""
+          : ' Ти з клубу? <button class="link" data-goto-account type="button">Увійди через Google</button> і напиши адміну: він підтвердить твою пошту, і ти побачиш справжні імена.'
+      }</p>`;
     // Графік і карту відкриваємо на найсвіжіших тижнях
     requestAnimationFrame(() => document.querySelectorAll("#club-body [data-scroll-end]").forEach((el) => (el.scrollLeft = el.scrollWidth)));
   }
@@ -215,7 +254,18 @@
     try {
       const { db } = await Leaderboard.connect();
       const snap = await db.collection("club").doc("public").get();
-      render(snap.exists ? snap.data() : null);
+      // Прив'язаний учасник клубу (адмін підтвердив його пошту) читає імена атлетів
+      let names = null, meId = "";
+      if (window.Account && Account.enabled()) {
+        try {
+          const st = await Account.refresh();
+          if (st.athleteId) {
+            names = await Account.athleteNames();
+            meId = st.athleteId;
+          }
+        } catch (e) {}
+      }
+      render(snap.exists ? snap.data() : null, names, meId);
     } catch (e) {
       $("club-body").innerHTML = '<p class="leaders__empty">Не вдалося завантажити статистику 😕</p>';
     } finally {

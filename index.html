@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=32">
+  <link rel="stylesheet" href="css/style.css?v=33">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -391,7 +391,7 @@
     <section id="tab-club" class="tab">
       <div class="panel club">
         <h2>Клуб: неділі</h2>
-        <p class="muted small-left">Відвідуваність недільних пробіжок Titan Club Rivne. Щоб зберегти приватність, імена замінені на вигаданих персонажів.</p>
+        <p class="muted small-left" id="club-lead">Відвідуваність недільних пробіжок Titan Club Rivne. Щоб зберегти приватність, імена замінені на вигаданих персонажів.</p>
         <div class="club__body" id="club-body">
           <p class="leaders__empty">Завантажую…</p>
         </div>
@@ -408,6 +408,11 @@
             <p class="muted small-left">Профіль збережено на цьому пристрої — без реєстрації.</p>
             <button class="link" id="profile-rename" type="button">змінити ім'я</button>
           </div>
+        </div>
+
+        <div class="account" id="account" hidden>
+          <div class="account__body" id="account-body"></div>
+          <div class="account__btn" id="account-btn"></div>
         </div>
 
         <div class="stats" id="profile-stats"></div>
@@ -516,23 +521,24 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=32"></script>
-  <script src="js/analytics.js?v=32"></script>
-  <script src="js/leaderboard.js?v=32"></script>
-  <script src="js/share.js?v=32"></script>
-  <script src="js/avatar.js?v=32"></script>
-  <script src="js/profile.js?v=32"></script>
-  <script src="js/rewards.js?v=32"></script>
-  <script src="js/game.js?v=32"></script>
-  <script src="js/app.js?v=32"></script>
-  <script src="js/sunday.js?v=32"></script>
-  <script src="js/sunday-ui.js?v=32"></script>
-  <script src="js/trail.js?v=32"></script>
-  <script src="js/trail-ui.js?v=32"></script>
-  <script src="js/draw.js?v=32"></script>
-  <script src="js/profile-ui.js?v=32"></script>
-  <script src="js/club.js?v=32"></script>
-  <script src="js/club-ui.js?v=32"></script>
-  <script src="js/pwa.js?v=32"></script>
+  <script src="js/config.js?v=33"></script>
+  <script src="js/analytics.js?v=33"></script>
+  <script src="js/leaderboard.js?v=33"></script>
+  <script src="js/share.js?v=33"></script>
+  <script src="js/avatar.js?v=33"></script>
+  <script src="js/profile.js?v=33"></script>
+  <script src="js/rewards.js?v=33"></script>
+  <script src="js/game.js?v=33"></script>
+  <script src="js/app.js?v=33"></script>
+  <script src="js/sunday.js?v=33"></script>
+  <script src="js/sunday-ui.js?v=33"></script>
+  <script src="js/trail.js?v=33"></script>
+  <script src="js/trail-ui.js?v=33"></script>
+  <script src="js/draw.js?v=33"></script>
+  <script src="js/profile-ui.js?v=33"></script>
+  <script src="js/account.js?v=33"></script>
+  <script src="js/club.js?v=33"></script>
+  <script src="js/club-ui.js?v=33"></script>
+  <script src="js/pwa.js?v=33"></script>
 </body>
 </html>
