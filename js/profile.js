@@ -166,6 +166,7 @@
   // buyDay/buyN — добовий ліміт купівель розгону за монети.
   const START_COINS = 50;
   const HEAD_PRICE = 100; // збігається з правилами Firestore
+  const PROMO_COINS = 120; // монет за промокод (теж у правилах)
   const BUY_LIMIT = 5;
   const PENDING_KEY = "titan.pendingCoins.v1"; // монети, які не вдалося зберегти (немає зв'язку)
 
@@ -285,8 +286,9 @@
     return wallet;
   }
 
-  // Активація: в одній транзакції позначаємо код використаним і додаємо буст; правила бази перевіряють обидва кроки
-  async function redeem(raw) {
+  // Активація: в одній транзакції позначаємо код використаним і додаємо нагороду (reward: "boost" — буст, "coins" — 120 монет);
+  // правила бази перевіряють обидва кроки
+  async function redeem(raw, reward) {
     const code = String(raw || "").trim().toUpperCase();
     if (!/^[A-Z0-9-]{6,40}$/.test(code)) throw new Error("bad_code");
     await loadWallet();
@@ -295,14 +297,18 @@
     const data = snap.exists ? snap.data() : { boosts: 0 };
     const batch = db.batch();
     batch.update(db.collection("codes").doc(code), { used: true, usedBy: uid, usedAt: stampNow() });
-    batch.set(ref, { ...data, boosts: (data.boosts || 0) + 1, lastCode: code, updatedAt: stampNow() });
+    const asCoins = reward === "coins";
+    const next = asCoins
+      ? { ...data, coins: (data.coins || 0) + PROMO_COINS, lastCode: code, updatedAt: stampNow() }
+      : { ...data, boosts: (data.boosts || 0) + 1, lastCode: code, updatedAt: stampNow() };
+    batch.set(ref, next);
     try {
       await batch.commit();
     } catch (e) {
       throw new Error("invalid_code");
     }
-    wallet = toWallet({ ...data, boosts: (data.boosts || 0) + 1 });
-    return wallet.boosts;
+    wallet = toWallet(next);
+    return wallet;
   }
 
   // Списати один буст на старті забігу; kind "head" — спершу розгін за монети, потім промокодний буст
@@ -370,6 +376,7 @@
     buyHead,
     buysLeft,
     HEAD_PRICE,
+    PROMO_COINS,
     BUY_LIMIT,
     START_COINS,
     refreshBoosts,

@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/style.css?v=37">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -444,15 +444,23 @@
 
         <div class="ppane" id="pane-boost" hidden>
           <div class="boost-card">
-            <p>Буст на <b>один забіг</b>: у «Неділі» чи «Трейлі» — золоті кросівки й ≈ <b>−3 с/км</b> до темпу; у «Бігу» — <b>розгін</b>: старт зі швидкістю 3-го км (кілометри рахуються з нуля). Розгін для «Бігу» можна ще купити за <b>100 монет</b> (до 5 на добу). Результат у таблиці позначається ⚡.</p>
-            <p class="boost-card__count">🪙 Монети: <b id="profile-coins">0</b> · ⚡ Розгін: <b id="profile-heads">0</b></p>
+            <h3 class="boost-card__title">🪙 За монети</h3>
+            <p>Монети збираєш у «Бігу». <b>100 монет = розгін</b>: один забіг стартує зі швидкістю 3-го км (кілометри рахуються з нуля), результат у таблиці з ⚡. Купити можна до 5 розгонів на добу.</p>
+            <p class="boost-card__count">🪙 Монети: <b id="profile-coins">0</b> · ⚡ Розгони: <b id="profile-heads">0</b></p>
             <button class="btn btn--small btn--wide" id="profile-buy-head" type="button">Купити розгін за 100 🪙</button>
-            <p class="boost-card__count">У тебе: <b id="profile-boosts">0</b> шт.</p>
+          </div>
+          <div class="boost-card">
+            <h3 class="boost-card__title">💛 За донат 30 грн</h3>
+            <p>Промокод на вибір: <b>⚡ буст</b> на один забіг у будь-якому режимі («Біг» — розгін, «Неділя» й «Трейл» — золоті кросівки, ≈ −3 с/км) або <b>🪙 120 монет</b>.</p>
+            <p class="boost-card__count">⚡ Бусти: <b id="profile-boosts">0</b> шт.</p>
             <a class="btn btn--primary btn--wide" id="profile-donate" target="_blank" rel="noopener" hidden>Задонатити 30 грн на банку</a>
             <p class="muted small-left" id="profile-donate-hint"></p>
-            <form class="lb-form" id="profile-code-form">
+            <form class="lb-form lb-form--col" id="profile-code-form">
               <input class="lb-form__input" id="profile-code" maxlength="40" placeholder="Промокод" autocomplete="off" autocapitalize="characters" required>
-              <button class="btn btn--small" type="submit">Активувати</button>
+              <div class="boost-card__rewards">
+                <button class="btn btn--small" type="submit" data-reward="boost">⚡ Взяти буст</button>
+                <button class="btn btn--small" type="submit" data-reward="coins">🪙 Взяти 120 монет</button>
+              </div>
             </form>
           </div>
         </div>
@@ -481,7 +489,7 @@
         <li>🪙 титан-монети — для рекорду</li>
         <li>Шлагбауми (з 4 км) — лише подвійним стрибком</li>
         <li>🪙 монети з забігів копляться на рахунку (новачкам 50 у подарунок)</li>
-        <li>⚡ <b>Розгін</b> — один забіг стартує зі швидкістю 3-го км, а кілометри рахуються з нуля; результат у таблиці з ⚡. Купується за 100 🪙 (до 5 на добу) або за промокод</li>
+        <li>⚡ <b>Розгін</b> — один забіг стартує зі швидкістю 3-го км, а кілометри рахуються з нуля; результат у таблиці з ⚡. Купується за 100 🪙 (до 5 на добу); промокод дає буст або 120 🪙</li>
       </ul>
       <button class="btn btn--primary" data-close type="button">Зрозуміло</button>
     </div>
@@ -534,26 +542,26 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=36"></script>
-  <script src="js/kyiv.js?v=36"></script>
-  <script src="js/analytics.js?v=36"></script>
-  <script src="js/errors.js?v=36"></script>
-  <script src="js/leaderboard.js?v=36"></script>
-  <script src="js/share.js?v=36"></script>
-  <script src="js/avatar.js?v=36"></script>
-  <script src="js/profile.js?v=36"></script>
-  <script src="js/rewards.js?v=36"></script>
-  <script src="js/game.js?v=36"></script>
-  <script src="js/app.js?v=36"></script>
-  <script src="js/sunday.js?v=36"></script>
-  <script src="js/sunday-ui.js?v=36"></script>
-  <script src="js/trail.js?v=36"></script>
-  <script src="js/trail-ui.js?v=36"></script>
-  <script src="js/draw.js?v=36"></script>
-  <script src="js/profile-ui.js?v=36"></script>
-  <script src="js/account.js?v=36"></script>
-  <script src="js/club.js?v=36"></script>
-  <script src="js/club-ui.js?v=36"></script>
-  <script src="js/pwa.js?v=36"></script>
+  <script src="js/config.js?v=37"></script>
+  <script src="js/kyiv.js?v=37"></script>
+  <script src="js/analytics.js?v=37"></script>
+  <script src="js/errors.js?v=37"></script>
+  <script src="js/leaderboard.js?v=37"></script>
+  <script src="js/share.js?v=37"></script>
+  <script src="js/avatar.js?v=37"></script>
+  <script src="js/profile.js?v=37"></script>
+  <script src="js/rewards.js?v=37"></script>
+  <script src="js/game.js?v=37"></script>
+  <script src="js/app.js?v=37"></script>
+  <script src="js/sunday.js?v=37"></script>
+  <script src="js/sunday-ui.js?v=37"></script>
+  <script src="js/trail.js?v=37"></script>
+  <script src="js/trail-ui.js?v=37"></script>
+  <script src="js/draw.js?v=37"></script>
+  <script src="js/profile-ui.js?v=37"></script>
+  <script src="js/account.js?v=37"></script>
+  <script src="js/club.js?v=37"></script>
+  <script src="js/club-ui.js?v=37"></script>
+  <script src="js/pwa.js?v=37"></script>
 </body>
 </html>

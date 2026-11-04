@@ -250,7 +250,7 @@ service cloud.firestore {
 
     // Гаманець і бусти гравця profiles/{uid}. Кожен запис — рівно одна з дій, решта полів не змінюється:
     //   • новачок: стартові 50 монет (create), старий профіль без монет: те саме (update);
-    //   • промокод: boosts +1 разом із погашенням коду;
+    //   • промокод: boosts +1 або coins +120 (на вибір гравця) разом із погашенням коду;
     //   • буст на старті: boosts −1 («Супер-кросівки») або heads −1 («Розгін» у «Бігу»);
     //   • заробіток: монети з «Бігу». Приріст не більший, ніж гравець міг зібрати за час після попереднього
     //     нарахування (≤ 1.2 монети/с + 30 запасу; чесний максимум ≈ 0.6/с);
@@ -292,6 +292,13 @@ service cloud.firestore {
             && request.resource.data.get('lastCode', '') != resource.data.get('lastCode', '')
             && redeemedNow(request.resource.data.lastCode)
             && sameWallet())
+          // промокод на 120 монет замість буста
+          || (request.resource.data.get('coins', 0) == resource.data.get('coins', 0) + 120
+            && request.resource.data.get('lastCode', '') != resource.data.get('lastCode', '')
+            && redeemedNow(request.resource.data.lastCode)
+            && resource.data.get('earnAt', null) != null
+            && same('boosts', 0) && same('heads', 0) && same('earnAt', null)
+            && same('buyDay', 0) && same('buyN', 0))
           // заробіток монет
           || (resource.data.get('earnAt', null) != null
             && request.resource.data.get('coins', 0) > resource.data.get('coins', 0)

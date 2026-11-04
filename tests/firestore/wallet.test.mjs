@@ -62,6 +62,26 @@ const cases = [
   ["old client overwrite without wallet rejected", () => setDoc(P("rich")(u("rich")), { boosts: 0, lastCode: "OLD-CODE1", updatedAt: now }), false],
   ["can't give yourself a boost", () => setDoc(P("rich")(u("rich")), base(rich, { boosts: 5 })), false],
 
+  ["redeem a code for 120 coins", async () => {
+    const db = u("rich"); const b = writeBatch(db);
+    b.update(doc(db, "codes/TR-AAAA-BBBB"), { used: true, usedBy: "rich", usedAt: now });
+    b.set(P("rich")(db), base(rich, { coins: 620, lastCode: "TR-AAAA-BBBB" }));
+    return b.commit();
+  }, true],
+  ["redeem for 300 coins rejected", async () => {
+    const db = u("rich"); const b = writeBatch(db);
+    b.update(doc(db, "codes/TR-AAAA-BBBB"), { used: true, usedBy: "rich", usedAt: now });
+    b.set(P("rich")(db), base(rich, { coins: 800, lastCode: "TR-AAAA-BBBB" }));
+    return b.commit();
+  }, false],
+  ["redeem for coins AND a boost rejected", async () => {
+    const db = u("rich"); const b = writeBatch(db);
+    b.update(doc(db, "codes/TR-AAAA-BBBB"), { used: true, usedBy: "rich", usedAt: now });
+    b.set(P("rich")(db), base(rich, { coins: 620, boosts: 2, lastCode: "TR-AAAA-BBBB" }));
+    return b.commit();
+  }, false],
+  ["120 coins without a code rejected", () => setDoc(P("rich")(u("rich")), base(rich, { coins: 620 })), false],
+  ["120 coins reusing the old code rejected", () => setDoc(P("rich")(u("rich")), base(rich, { coins: 620, lastCode: "OLD-CODE1" })), false],
   ["redeem a code keeps wallet", async () => {
     const db = u("rich"); const b = writeBatch(db);
     b.update(doc(db, "codes/TR-AAAA-BBBB"), { used: true, usedBy: "rich", usedAt: now });
