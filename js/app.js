@@ -60,6 +60,19 @@
     }
   });
 
+  // Кнопка «Назад» в Android-додатку (оболонка Flutter): закрити вікно, повернутися з розділу на головну.
+  // Повертає true, якщо сторінка сама обробила «Назад»; false — додаток закриється.
+  window.titanBack = function () {
+    const modal = document.querySelector(".modal:not([hidden])");
+    if (modal) {
+      modal.hidden = true;
+      return true;
+    }
+    if (document.body.classList.contains("is-home")) return false;
+    document.getElementById("home-link").click();
+    return true;
+  };
+
   // ---------- Спливаючі вікна «Як грати» ----------
   function closeModals() {
     document.querySelectorAll(".modal").forEach((m) => (m.hidden = true));

@@ -1,0 +1,83 @@
+# Збірка Android-додатка Titan Run (Flutter, оболонка навколо гри) у файл titan-run.apk.
+# Запуск: сам при зміні папки mobile/, або вручну: Actions → «Android APK» → Run workflow.
+# З галочкою «release» файл також потрапляє в Releases (android-latest) — звідти його можна роздавати.
+name: Android APK
+
+on:
+  push:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Опублікувати APK у Releases (android-latest)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.47.9"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Flutter SDK
+        working-directory: .
+        run: |
+          curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" | tar -xJ -C "$HOME"
+          echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Залежності
+        run: flutter pub get
+
+      - name: Перевірка коду
+        run: flutter analyze
+
+      - name: Тести
+        run: flutter test
+
+      - name: Збірка APK
+        run: flutter build apk --release --build-name "1.0.${{ github.run_number }}" --build-number "${{ github.run_number }}"
+
+      - name: Назва файлу
+        run: cp build/app/outputs/flutter-apk/app-release.apk titan-run.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: titan-run-apk
+          path: mobile/titan-run.apk
+          if-no-files-found: error
+
+      - name: Публікація в Releases
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-latest --yes --cleanup-tag || true
+          gh release create android-latest titan-run.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Titan Run для Android" \
+            --notes "Android-додаток Titan Run (збірка №${{ github.run_number }}). Завантаж titan-run.apk, відкрий і встанови (Android може попросити дозволити встановлення з цього джерела). Сама гра оновлюється з сайту, перевстановлювати додаток не треба."
