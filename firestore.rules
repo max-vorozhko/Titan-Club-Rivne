@@ -151,9 +151,52 @@ service cloud.firestore {
       return isOwner();
     }
 
-    // Атлети клубу з реальними іменами: бачать і змінюють лише адміни
+    // Вхід гравців через Google: logins/{uid}. Пошту підтверджує сам Google (токен), прив'язку до атлета
+    // клубу (athleteId) ставить лише адмін. Прив'язаний гравець бачить справжні імена у вкладці «Клуб».
+    function memberAthlete() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/logins/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/logins/$(request.auth.uid)).data.get('athleteId', '') : '';
+    }
+
+    function isLinkedMember() {
+      return memberAthlete() != '';
+    }
+
+    function validLoginText(d) {
+      return d.displayName is string && d.displayName.size() <= 100
+        && d.nick is string && d.nick.size() <= 20;
+    }
+
+    match /logins/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || isClubAdmin());
+      allow list: if isClubAdmin();
+      allow create: if request.auth != null && request.auth.uid == uid
+        && verifiedEmail() != ''
+        && request.resource.data.keys().hasOnly(['email', 'displayName', 'nick', 'createdAt', 'lastSeen'])
+        && request.resource.data.email == verifiedEmail()
+        && validLoginText(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.lastSeen == request.time;
+      allow update: if request.auth != null && (
+        (request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'nick', 'lastSeen'])
+          && validLoginText(request.resource.data)
+          && request.resource.data.lastSeen == request.time)
+        || (isClubAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['athleteId', 'linkedAt', 'linkedBy'])
+          && (!('athleteId' in request.resource.data)
+            || (request.resource.data.athleteId is string
+              && exists(/databases/$(database)/documents/athletes/$(request.resource.data.athleteId))
+              && request.resource.data.linkedAt == request.time
+              && request.resource.data.linkedBy == verifiedEmail()))));
+      allow delete: if isClubAdmin();
+    }
+
+    // Атлети клубу з реальними іменами: бачать адміни та прив'язані учасники клубу, змінюють лише адміни
     match /athletes/{id} {
-      allow read, delete: if isClubAdmin();
+      allow read: if isClubAdmin() || isLinkedMember();
+      allow delete: if isClubAdmin();
       allow create, update: if isClubAdmin()
         && request.resource.data.keys().hasOnly(['name', 'persona', 'emoji', 'active', 'updatedAt'])
         && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60

@@ -46,12 +46,18 @@
           auth.useEmulator("http://127.0.0.1:9099");
           db.useEmulator("127.0.0.1", 8080);
         }
-        const cred = auth.currentUser ? { user: auth.currentUser } : await auth.signInAnonymously();
-        return { db, uid: cred.user.uid, scores: db.collection("scores") };
+        // Спершу чекаємо, поки Firebase відновить збереженого гравця (анонімного чи з Google), і лише потім
+        // вирішуємо, чи входити анонімно: інакше вхід через Google загубився б при перезавантаженні
+        await new Promise((resolve) => {
+          const off = auth.onAuthStateChanged(() => { off(); resolve(); });
+        });
+        if (!auth.currentUser) await auth.signInAnonymously();
+        return { db, auth, scores: db.collection("scores") };
       })();
       ready.catch(() => (ready = null));
     }
-    return ready;
+    // uid беремо щоразу заново: після входу через Google він може змінитися
+    return ready.then((c) => ({ ...c, uid: c.auth.currentUser ? c.auth.currentUser.uid : null }));
   }
 
   // ---------- Зміна місця відносно вчора ----------

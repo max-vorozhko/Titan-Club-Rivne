@@ -517,3 +517,12 @@ body.is-home .topbar { display: none; }
 .dr-result .lb-form { width: min(360px, 100%); }
 /* Чотири розділи рейтингу в один рядок */
 .lb-modes .seg__btn { white-space: nowrap; padding: 8px 4px; font-size: 14px; }
+
+/* ---------- Акаунт Google у профілі ---------- */
+.account { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); border-left: 4px solid var(--brand); }
+.account__body { display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.4; text-align: left; }
+.account__body b { font: 700 16px var(--font-display); letter-spacing: .5px; word-break: break-all; }
+.account__body span { color: var(--muted); }
+.account__btn { display: flex; align-items: center; min-height: 44px; }
+.account__btn .btn { margin: 0; }
+.club-heat__who.is-me { color: var(--brand); font-weight: 800; }
