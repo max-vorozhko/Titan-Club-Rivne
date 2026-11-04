@@ -96,7 +96,7 @@ README.md             — опис для людей
 ## 7. Процес релізу (як ми працюємо)
 
 1. Робоча гілка Claude: `claude/titan-club-running-game-5n9nm4` (реліз v21 ішов з `claude/titan-run-v21`, бо стару гілку без примусового пушу не перезапустити). Після злиття PR гілку перезапускаємо від свіжого `main` (`git fetch origin main && git checkout -B <гілка> origin/main`).
-2. **Кожен реліз збільшуємо `?v=N`** у всіх `<script>`/`<link>` в `index.html` (зараз 29) — інакше браузери беруть старі файли з кешу.
+2. **Кожен реліз збільшуємо `?v=N`** у всіх `<script>`/`<link>` в `index.html` (зараз 30) — інакше браузери беруть старі файли з кешу.
 3. Коміти з поясненням «чому»; PR українською з розділами «Зміни» і «Перевірка».
 4. Якщо змінюється `firestore.rules`: **спершу власник публікує правила, потім зливаємо PR** (інакше нова таблиця не працює). Після публікації перевіряємо REST-запитом (див. вище).
 5. Злиття PR → GitHub Pages сам публікує за 1–2 хв (workflow «pages build and deployment»). Гравцям іноді треба перевідкрити вкладку (кеш до 10 хв).
@@ -168,6 +168,15 @@ README.md             — опис для людей
 - Пауза при виході з вкладки чи згортанні. Аналітика: `run-draw-<id>`.
 - **Не зроблено (ідеї):** рейтинг для кожного малюнка з ▲▼ (потрібні нові правила Firestore), ачівка «Художник» з мерчем, нові малюнки, малювання реальним маршрутом (GPX).
 - Прототип у Claude (приватний): https://claude.ai/artifact/35AgwAz14kRKSbJgsaUxvn
+
+## 7е. Додаток для Android
+
+- `mobile/` — Flutter-проєкт (пакет `com.titanclub.titan_run`): `webview_flutter` показує сайт на весь екран. Адреси поза грою й `admin.html` відкриваються назовні (`lib/navigation_policy.dart`, є тести). «Назад» — `window.titanBack()` в `js/app.js`.
+- Збірка лише в GitHub Actions: `.github/workflows/android.yml` (Flutter 3.47.9, Java 17). Локально в середовищі Claude Android SDK недоступний (`dl.google.com` закритий), тому `flutter build apk` там не працює; `flutter analyze` і `flutter test` працюють.
+- Запуск: Actions → «Android APK» → Run workflow; з галочкою **release** файл `titan-run.apk` лягає в Releases (тег `android-latest`), посилання для друзів: https://github.com/max-vorozhko/Titan-Club-Rivne/releases/download/android-latest/titan-run.apk
+- Підпис поки debug-ключем (новий на кожну збірку), тож оновити додаток поверх старого файлом не вийде, треба видалити й поставити заново. Сама гра оновлюється з сайту й без цього. Для постійного ключа: keystore + секрети репозиторію + `key.properties`.
+- iPhone: ярлик з Safari (PWA), див. розділ 7г. Справжній iOS-додаток потребує акаунта Apple ($99/рік).
+- Ідеї: нативне «Поділитись» картинкою (у WebView немає Web Share API і не працює збереження blob-картинок), push-сповіщення, постійний ключ підпису.
 
 ## 8а. Статистика відвідувань
 
