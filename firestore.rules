@@ -282,11 +282,12 @@ service cloud.firestore {
     }
 
     function validScore(d) {
-      return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'dayStart', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'boost', 'dayStart', 'updatedAt'])
+        && (!('boost' in d) || d.boost is bool)
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
         && d.km is number && d.km > 0 && d.km <= 60
         && d.time is number && d.time > 0
-        // Найбільша можлива середня швидкість у грі ≈ 0.263 км/с (максимум + гель)
+        // Найбільша можлива середня швидкість у грі ≈ 0.263 км/с (максимум + гель); «розгін» максимум не змінює
         && d.km <= d.time * 0.27
         && d.coins is int && d.coins >= 0 && d.coins <= d.km * 120
         && d.updatedAt == request.time;

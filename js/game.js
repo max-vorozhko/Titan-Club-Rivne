@@ -9,6 +9,7 @@
   const DOUBLE_JUMP = -640;
   const START_SPEED = 340;
   const MAX_SPEED = 780;
+  const HEAD_START_KM = 3;  // «Розгін»: швидкість і перешкоди як на 3-му км, а кілометри все одно рахуються з нуля
 
   const MILESTONES = [
     { km: 1, label: "Перший кілометр!" },
@@ -65,6 +66,7 @@
       this.energy = 100;
       this.coins = 0;
       this.boost = 0;
+      this.head = 0;
       this.items = [];
       this.particles = [];
       this.nextObstacle = 1.2;
@@ -74,8 +76,9 @@
       this.time = 0;
     }
 
-    start() {
+    start(headStart) {
       this.reset();
+      this.head = headStart ? HEAD_START_KM : 0;
       this.running = true;
       this.last = performance.now();
       requestAnimationFrame((t) => this.loop(t));
@@ -98,6 +101,11 @@
       return this.dist / PX_PER_KM;
     }
 
+    // Складність: реальні км + розгін (енергія витрачається за реальними км)
+    get level() {
+      return this.km + this.head;
+    }
+
     loop(now) {
       if (!this.running) return;
       const dt = Math.min((now - this.last) / 1000, 0.05);
@@ -111,7 +119,7 @@
       this.time += dt;
       const p = this.player;
       const boosted = this.boost > 0;
-      this.speed = Math.min(MAX_SPEED, START_SPEED + this.km * 22);
+      this.speed = Math.min(MAX_SPEED, START_SPEED + this.level * 22);
       const v = this.speed * (boosted ? 1.35 : 1);
       this.dist += v * dt;
       this.boost = Math.max(0, this.boost - dt);
@@ -169,12 +177,12 @@
       this.nextPickup -= dt;
 
       if (this.nextObstacle <= 0) {
-        const kinds = Object.keys(OBSTACLES).filter((k) => this.km >= OBSTACLES[k].minKm);
+        const kinds = Object.keys(OBSTACLES).filter((k) => this.level >= OBSTACLES[k].minKm);
         const kind = kinds[Math.floor(Math.random() * kinds.length)];
         const o = OBSTACLES[kind];
         this.items.push({ kind: "obstacle", type: kind, x: this.W + 20, y: GROUND - o.h, w: o.w, h: o.h, extraSpeed: o.extraSpeed || 0 });
         // Що швидше біжимо, то частіше перешкоди, але завжди лишаємо час на реакцію
-        const gap = Math.max(0.75, 1.9 - this.km * 0.03);
+        const gap = Math.max(0.75, 1.9 - this.level * 0.03);
         this.nextObstacle = gap + Math.random() * 0.9;
       }
 
@@ -237,7 +245,7 @@
       this.burst(this.player.x, this.player.y - 30, this.colors.brand, 30);
       this.draw(0);
       const reached = MILESTONES.slice(0, this.milestone).pop();
-      this.ui.over({ km: this.km, coins: this.coins, time: this.time, reason, mark: reached ? reached.label.replace(/[!—].*$/, "").trim() : "—" });
+      this.ui.over({ km: this.km, coins: this.coins, time: this.time, boost: this.head > 0, reason, mark: reached ? reached.label.replace(/[!—].*$/, "").trim() : "—" });
     }
 
     burst(x, y, color, n) {
@@ -433,7 +441,7 @@
       }
 
       // Бігун у вигляді, який гравець вибрав у профілі
-      Avatar.drawPerson(c, x, p.y, 1, Profile.look(false), s);
+      Avatar.drawPerson(c, x, p.y, 1, Profile.look(this.head > 0), s);
     }
   }
 

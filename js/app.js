@@ -28,7 +28,11 @@
   document.querySelectorAll(".tabs__btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       showTab(btn.dataset.tab);
-      if (btn.dataset.tab === "game") game.resize();
+      if (btn.dataset.tab === "game") {
+        game.resize();
+        renderGameBoosts();
+        renderBestRuns();
+      }
       else if (btn.dataset.tab === "leaders") loadLeaders();
       else if (btn.dataset.tab === "profile") renderRewards();
     });
@@ -121,8 +125,9 @@
     },
     over(result) {
       lastResult = result;
-      const best = Math.max(getBest(), result.km);
-      const isRecord = result.km > getBest();
+      const prevBest = getBest();
+      const best = Math.max(prevBest, result.km);
+      const isRecord = result.km > prevBest;
       setBest(best);
       $("hud").hidden = true;
       // Причину показуємо завжди, щоб було зрозуміло, чим закінчився забіг
@@ -133,12 +138,71 @@
       $("over-pace").textContent = result.mark;
       $("best-over").textContent = best.toFixed(2);
       $("best-start").textContent = best.toFixed(2);
-      Profile.record({ mode: "game", km: result.km });
+      Profile.record({ mode: "game", km: result.km, boost: result.boost });
+      renderVs(result.km, prevBest, isRecord);
+      renderBestRuns();
+      renderGameBoosts();
       prepareSubmit(result);
       // Невелика пауза, щоб випадковий тап не перезапустив гру одразу
       setTimeout(() => ($("screen-over").hidden = false), 450);
     },
   };
+
+  // ---------- Порівняння з рекордом, «Мої найкращі», розгін ----------
+  const plural = (n, one, few, many) => {
+    const m10 = n % 10, m100 = n % 100;
+    return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many;
+  };
+
+  // «сьогодні», «вчора», «5 днів тому», «3 тижні тому», далі — дата
+  function ago(ms) {
+    const days = Math.round((Date.parse(Kyiv.today() + "T00:00:00Z") - Date.parse(Kyiv.iso(new Date(ms)) + "T00:00:00Z")) / 864e5);
+    if (days <= 0) return "сьогодні";
+    if (days === 1) return "вчора";
+    if (days < 14) return `${days} ${plural(days, "день", "дні", "днів")} тому`;
+    if (days < 60) {
+      const w = Math.floor(days / 7);
+      return `${w} ${plural(w, "тиждень", "тижні", "тижнів")} тому`;
+    }
+    return Kyiv.dayMonth(new Date(ms));
+  }
+
+  function renderVs(km, prevBest, isRecord) {
+    const el = $("over-vs");
+    const diff = Math.round((prevBest - km) * 100) / 100;
+    el.hidden = prevBest <= 0;
+    if (prevBest <= 0) return;
+    el.textContent = isRecord
+      ? `Старий рекорд ${prevBest.toFixed(2)} км · на ${(km - prevBest).toFixed(2)} км більше 🚀`
+      : `Рекорд ${prevBest.toFixed(2)} км · ще ${diff.toFixed(2)} км до нього`;
+    // Підказка про розгін: збився далеко від рекорду
+    const hint = $("over-boost-hint");
+    const far = !isRecord && diff >= 5;
+    hint.hidden = !far;
+    if (far) hint.innerHTML = `До рекорду далеко. Спробуй з ⚡ розгоном: старт зі швидкістю 3-го км.${Profile.boosts() ? "" : ' <button class="link" data-goto-boost type="button">Отримати →</button>'}`;
+  }
+
+  function renderBestRuns() {
+    const list = Profile.bestRuns(3);
+    ["start", "over"].forEach((where) => {
+      const el = $("best-runs-" + where);
+      el.hidden = !list.length;
+      if (!list.length) return;
+      el.innerHTML =
+        "<b>Мої найкращі</b>" +
+        list
+          .map((r, i) => `<div class="best-runs__row${r.fresh && where === "over" ? " is-fresh" : ""}"><span>${MEDALS[i]} ${r.km.toFixed(2)} км${r.boost ? " ⚡" : ""}</span><small>${r.old ? "раніше" : r.fresh && where === "over" ? "щойно" : ago(r.at)}</small></div>`)
+          .join("");
+    });
+  }
+
+  function renderGameBoosts() {
+    ["start", "over"].forEach((where) => Profile.renderBoostToggle($("game-boost-" + where)));
+    // Реклама розгону лише там, де в гравця немає бустів
+    Promise.resolve(Profile.refreshBoosts()).then((n) => {
+      $("game-promo").hidden = !Leaderboard.enabled || n > 0;
+    });
+  }
 
   const game = new TitanGame($("game-canvas"), ui);
   $("best-start").textContent = getBest().toFixed(2);
@@ -165,17 +229,25 @@
     if (e.key === "Enter") start();
   });
 
-  function start() {
+  let starting = false;
+
+  async function start() {
+    if (starting || game.running) return;
+    starting = true;
     const typed = $("start-name-input").value.trim();
     if (!$("start-name").hidden && typed.length >= 2) {
       Leaderboard.setName(typed);
       renderStartName();
     }
     $("share-sheet").hidden = true;
+    // Розгін вмикається галочкою на тому екрані, з якого стартуємо (стартовий або після забігу)
+    const boosted = await Profile.takeBoost($(!$("screen-over").hidden ? "game-boost-over" : "game-boost-start"));
     $("screen-start").hidden = true;
     $("screen-over").hidden = true;
     $("hud").hidden = false;
-    game.start();
+    starting = false;
+    game.start(boosted);
+    if (boosted) renderGameBoosts();
   }
 
   $("btn-start").addEventListener("click", start);
@@ -369,7 +441,7 @@
           ? data.rows.map((r) => `
             <li class="leaders__row${r.me ? " is-me" : ""}">
               <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-              <span class="leaders__name">${escapeHtml(r.name)}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
+              <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із розгоном">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
               <span class="leaders__coins">🪙 ${r.coins}</span>
               <span class="leaders__km">${Number(r.km).toFixed(2)} км</span>
             </li>`).join("")
@@ -464,4 +536,6 @@
 
   renderRewards();
   renderStartName();
+  renderBestRuns();
+  renderGameBoosts();
 })();

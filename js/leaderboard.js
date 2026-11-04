@@ -125,7 +125,7 @@
     const { scores, uid } = await connect();
     const snap = await scores.get();
     const all = withMoves(snap.docs.map((d) => ({ id: d.id, data: d.data() })), "km", false, uid);
-    const rows = all.slice(0, TOP_N).map((r) => ({ place: r.place, name: r.data.name, km: r.data.km, coins: r.data.coins, me: r.me, move: r.move, isNew: r.isNew }));
+    const rows = all.slice(0, TOP_N).map((r) => ({ place: r.place, name: r.data.name, km: r.data.km, coins: r.data.coins, boost: !!r.data.boost, me: r.me, move: r.move, isNew: r.isNew }));
     const mine = all.find((r) => r.me);
     const me = mine ? { place: rankOf(mine.data.km, all.map((r) => r.data.km), false), km: mine.data.km } : null;
     return { rows, me, total: all.length };
@@ -147,7 +147,7 @@
       best = prev.km;
       if (prev.name !== name) await ref.set({ ...prev, name, dayStart, updatedAt: stamp });
     } else {
-      await ref.set({
+      const doc = {
         name,
         km,
         coins: Math.floor(run.coins),
@@ -155,7 +155,10 @@
         time: Math.ceil(run.time),
         dayStart,
         updatedAt: stamp,
-      });
+      };
+      // «Розгін» пишемо лише для забігів із ним: звичайні результати сумісні й зі старими правилами
+      if (run.boost) doc.boost = true;
+      await ref.set(doc);
     }
     return { best, place: await placeOf(scores, best) };
   }
