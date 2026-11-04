@@ -266,9 +266,16 @@
     if (lastResult) submitRun(lastResult);
   });
 
-  // Спільна турнірна таблиця: розділи Біг / Неділя / Трейл, у Неділі й Трейлі — розбивка за дистанціями
-  const LB_DISTS = { sunday: [5, 10], trail: [7, 13, 26] };
-  const lbDist = { sunday: 5, trail: 7 };
+  // Спільна турнірна таблиця: розділи Біг / Неділя / Трейл / Малюнок; у Неділі й Трейлі — розбивка за дистанціями,
+  // у Малюнку — за малюнками (id з js/draw.js)
+  const DRAW_NAMES = { titan: "TITAN", heart: "Серце", star: "Зірка", rivne: "РІВНЕ" };
+  const LB_DISTS = { sunday: [5, 10], trail: [7, 13, 26], draw: Object.keys(DRAW_NAMES) };
+  const lbDist = { sunday: 5, trail: 7, draw: null };
+  const distLabel = (mode, d) => (mode === "draw" ? DRAW_NAMES[d] : `${d} км`);
+  const fmtDraw = (t) => {
+    const m = Math.floor(t / 60), s = t - m * 60;
+    return `${m}:${s < 10 ? "0" : ""}${s.toFixed(1)}`;
+  };
   let lbMode = "game";
   let lbSeq = 0;
 
@@ -289,11 +296,27 @@
       .join("");
   }
 
+  function drawRows(rows) {
+    return rows
+      .map(
+        (r) => `
+        <li class="leaders__row${r.me ? " is-me" : ""}">
+          <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
+          <span class="leaders__name">${escapeHtml(r.name)}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
+          <span class="leaders__coins">⏱ ${fmtDraw(r.time)}</span>
+          <span class="leaders__km">${r.points}</span>
+        </li>`
+      )
+      .join("");
+  }
+
   function renderLbDists() {
+    // Малюнок дня відкривається першим, поки гравець не обрав інший
+    if (lbMode === "draw" && !lbDist.draw) lbDist.draw = (window.DrawUI && DrawUI.dailyId()) || "titan";
     const dists = LB_DISTS[lbMode];
     $("lb-dist").hidden = !dists;
     $("lb-dist").innerHTML = dists
-      ? dists.map((d) => `<button class="seg__btn${d === lbDist[lbMode] ? " is-active" : ""}" data-dist="${d}" type="button">${d} км</button>`).join("")
+      ? dists.map((d) => `<button class="seg__btn${d === lbDist[lbMode] ? " is-active" : ""}" data-dist="${d}" type="button">${distLabel(lbMode, d)}</button>`).join("")
       : "";
   }
 
@@ -314,6 +337,7 @@
       game: "Найдовші забіги в Titan Run серед учасників Titan Club Rivne.",
       sunday: `Тиждень №${week.number} · ${week.theme.name} · найкращий час тижня. Рейтинг обнуляється щопонеділка.`,
       trail: "Підготовка до Житомирських вертикалей · найкращий час за весь час.",
+      draw: "Малюнок маршрутом · найкращі бали за весь час. При рівних балах вище швидший.",
     }[lbMode];
     if (!Leaderboard.enabled) {
       $("lb-wip").hidden = false;
@@ -338,6 +362,12 @@
             </li>`).join("")
           : empty("Поки що порожньо. Стань першим! 🏃");
         renderMe(data.me && data.me.place, data.total);
+      } else if (lbMode === "draw") {
+        const rows = await Leaderboard.drawTop(lbDist.draw, 30);
+        if (seq !== lbSeq) return;
+        const mine = rows.find((r) => r.me);
+        $("lb-list").innerHTML = rows.length ? drawRows(rows) : empty("Цей малюнок ще ніхто не пробіг. Будь першим! ✏️");
+        renderMe(mine && mine.place);
       } else {
         const d = lbDist[lbMode];
         const rows = lbMode === "sunday" ? await Leaderboard.sundayTop(week.id, d, 30, { moves: true, prevWeek: window.SundayRun.weekInfo(-1).id }) : await Leaderboard.trailTop(d, 30);
@@ -379,9 +409,17 @@
   $("lb-dist").addEventListener("click", (e) => {
     const btn = e.target.closest("[data-dist]");
     if (!btn) return;
-    lbDist[lbMode] = Number(btn.dataset.dist);
+    lbDist[lbMode] = lbMode === "draw" ? btn.dataset.dist : Number(btn.dataset.dist);
     loadLeaders();
   });
+
+  // Відкрити таблицю потрібного розділу (наприклад, з режиму «Малюнок»)
+  window.openLeaders = function (mode, dist) {
+    lbMode = mode;
+    if (dist != null) lbDist[mode] = dist;
+    $("lb-mode").querySelectorAll(".seg__btn").forEach((b) => b.classList.toggle("is-active", b.dataset.mode === mode));
+    goTab("leaders");
+  };
 
   // Архів переможців живе у вкладці «Неділя»
   $("lb-archive").addEventListener("click", () => {

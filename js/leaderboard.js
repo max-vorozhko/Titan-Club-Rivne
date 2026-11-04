@@ -247,6 +247,43 @@
       .map((r) => ({ place: r.place, name: r.data.name, time: r.data.time, boost: !!r.data.boost, me: r.me, move: r.move, isNew: r.isNew }));
   }
 
+  // ---------- Малюнок дня: draw/{titan|heart|star|rivne}/runs/{uid}, найкращий результат за малюнок ----------
+  // key = бали·10000 − час у десятих секунди: більше — краще (спершу бали, при рівних швидший).
+
+  const drawRuns = (db, id) => db.collection("draw").doc(id).collection("runs");
+
+  async function drawSubmit(run) {
+    const { db, uid } = await connect();
+    const runs = drawRuns(db, run.id);
+    const ref = runs.doc(uid);
+    const name = read(NAME_KEY);
+    const t = Math.min(36000, Math.max(10, Math.round(run.time * 10)));
+    const points = Math.max(0, Math.min(1000, Math.round(run.points)));
+    const key = points * 10000 - t;
+    const own = await ref.get();
+    const prev = own.exists ? own.data() : null;
+    const stamp = firebase.firestore.FieldValue.serverTimestamp();
+    const dayStart = nextDayStart(prev, "key");
+    let best = { key, points, time: t / 10 };
+    if (prev && prev.key >= key) {
+      // Рекорд не побито: лише оновлюємо ім'я, якщо його змінили
+      best = { key: prev.key, points: prev.points, time: prev.t / 10 };
+      if (prev.name !== name) await ref.set({ ...prev, name, dayStart, updatedAt: stamp });
+    } else {
+      await ref.set({ name, points, t, key, dayStart, updatedAt: stamp });
+    }
+    const better = await countOf(runs.where("key", ">", best.key));
+    return { best, place: better === null ? null : better + 1 };
+  }
+
+  async function drawTop(id, limit) {
+    const { db, uid } = await connect();
+    const snap = await drawRuns(db, id).get();
+    return withMoves(snap.docs.map((d) => ({ id: d.id, data: d.data() })), "key", false, uid)
+      .slice(0, limit || TOP_N)
+      .map((r) => ({ place: r.place, name: r.data.name, points: r.data.points, time: r.data.t / 10, me: r.me, move: r.move, isNew: r.isNew }));
+  }
+
   // Позначка біля імені: ▲2 / ▼1 / NEW (нічого, якщо місце не змінилось або невідомо)
   function moveBadge(r) {
     if (!r) return "";
@@ -267,6 +304,8 @@
     sundayTop,
     trailSubmit,
     trailTop,
+    drawSubmit,
+    drawTop,
     moveBadge,
     withMoves,
   };
