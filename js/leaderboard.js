@@ -64,17 +64,8 @@
   // Кожен запис зберігає dayStart — свій результат на початок доби, коли його востаннє змінювали
   // (null — запис створено того дня). Звідси для всіх однаково видно «вчорашнє» місце.
 
-  // Північ за київським часом, мс (незалежно від часового поясу телефона)
-  function dayStartMs(now) {
-    const d = now || new Date();
-    const p = {};
-    new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })
-      .formatToParts(d)
-      .forEach((x) => (p[x.type] = Number(x.value)));
-    const wall = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
-    const offset = wall - Math.floor(d.getTime() / 1000) * 1000; // київський час мінус UTC
-    return Date.UTC(p.year, p.month - 1, p.day) - offset;
-  }
+  // Північ за київським часом, мс (незалежно від часового поясу телефона; див. js/kyiv.js)
+  const dayStartMs = (now) => Kyiv.startOfDayMs(now);
 
   const millis = (t) => (t && t.toMillis ? t.toMillis() : null);
 

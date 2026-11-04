@@ -57,7 +57,7 @@
   // ---------- Тиждень і траса ----------
 
   function kyivToday() {
-    return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    return Kyiv.today();
   }
 
   function mondayOf(dateStr) {

@@ -112,10 +112,9 @@
   }
 
   // ---------- Дата, малюнок дня, пам'ять ----------
-  const kyivFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" });
   const dayNumber = (iso) => { const p = iso.split("-"); return Math.floor(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); };
   const isoOf = (num) => new Date(num * 86400000).toISOString().slice(0, 10);
-  const TODAY = kyivFmt.format(new Date());
+  const TODAY = Kyiv.today();
   const DAILY = dayNumber(TODAY) % TEMPLATES.length;
 
   const KEY = "titan.draw.v1";
@@ -462,8 +461,7 @@
       g.textAlign = "center"; g.textBaseline = "alphabetic";
       g.fillStyle = "#ffffff"; g.font = "700 58px Oswald, Impact, sans-serif"; g.fillText("TITAN RUN", 270, 92);
       g.fillStyle = "#ffc21a"; g.font = "600 24px Montserrat, sans-serif";
-      const d = new Date().toLocaleDateString("uk-UA", { day: "numeric", month: "long", timeZone: "Europe/Kyiv" });
-      g.fillText(("Малюнок дня · " + d).toUpperCase(), 270, 130);
+      g.fillText(("Малюнок дня · " + Kyiv.dayMonth(new Date())).toUpperCase(), 270, 130);
       g.save();
       g.translate(30, 160); g.scale(0.6, 0.6);
       rrect(g, 0, 0, W, H, 40); g.clip();
@@ -585,7 +583,7 @@
   );
 
   // ---------- Старт ----------
-  $("dr-date").textContent = "Сьогодні, " + new Date().toLocaleDateString("uk-UA", { day: "numeric", month: "long", timeZone: "Europe/Kyiv" }) + ": " + TEMPLATES[DAILY].name;
+  $("dr-date").textContent = "Сьогодні, " + Kyiv.dayMonth(new Date()) + ": " + TEMPLATES[DAILY].name;
   loadTemplate(DAILY);
   renderStreak();
 
