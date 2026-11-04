@@ -319,6 +319,15 @@ main { flex: 1; display: flex; min-height: 0; }
 .boost-toggle small { font-weight: 600; color: var(--muted); }
 .boost-mark { font-size: 14px; }
 
+/* «Біг»: порівняння з рекордом і «Мої найкращі» */
+.overlay__vs { margin: 2px 0 0; font-weight: 700; color: var(--ink); }
+.overlay__hint { max-width: 340px; margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff8dc; border: 2px dashed var(--accent); font-size: 13px; font-weight: 600; line-height: 1.35; }
+.best-runs { width: min(260px, 100%); margin: 4px 0; padding: 8px 12px; border-radius: 12px; background: var(--surface); text-align: left; font-size: 14px; }
+.best-runs > b { display: block; margin-bottom: 2px; font: 700 13px var(--font-display); text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.best-runs__row { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; font-weight: 700; }
+.best-runs__row small { color: var(--muted); font-weight: 600; }
+.best-runs__row.is-fresh { color: var(--brand); }
+
 /* ---------- Головна: вибір формату ---------- */
 /* На головній шапка не потрібна: велике лого й ті самі розділи там великими кнопками */
 body.is-home .topbar { display: none; }

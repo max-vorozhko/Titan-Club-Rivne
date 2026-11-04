@@ -25,7 +25,7 @@
     p = p || {};
     p.look = Object.assign({}, Avatar.DEFAULT_LOOK, p.look);
     p.stats = Object.assign(
-      { runs: 0, totalKm: 0, streak: 0, bestStreak: 0, lastDay: "", gameBest: 0, sunday: {}, trail: {} },
+      { runs: 0, totalKm: 0, streak: 0, bestStreak: 0, lastDay: "", gameBest: 0, sunday: {}, trail: {}, bestRuns: [] },
       p.stats
     );
     p.unlocked = p.unlocked || [];
@@ -73,7 +73,29 @@
     achievements.forEach((a, i) => setTimeout(() => toast(`🎁 Новий мерч: ${itemName(a)}!`), i * 1800));
   }
 
-  /** Завершений забіг: { mode: "game" | "sunday" | "trail", km?, dist?, time? } */
+  // Десять найкращих забігів «Бігу» з датою (лише на цьому пристрої; без Firestore)
+  const KEEP_RUNS = 10;
+  function rememberRun(run) {
+    if (!(run.km >= 0.1)) return;
+    const list = state.stats.bestRuns;
+    const mine = { km: Math.round(run.km * 100) / 100, at: Date.now() };
+    if (run.boost) mine.boost = true;
+    list.push(mine);
+    list.sort((a, b) => b.km - a.km || b.at - a.at);
+    list.length = Math.min(list.length, KEEP_RUNS);
+    state.lastRunAt = mine.at;
+  }
+
+  /** Найкращі забіги «Бігу»: [{km, at, boost?, old?, fresh?}]. Рекорд, збережений до появи історії, іде без дати (old). */
+  function bestRuns(n) {
+    const s = state.stats;
+    const list = s.bestRuns.map((r) => ({ ...r, fresh: r.at === state.lastRunAt }));
+    if (s.gameBest > 0 && !list.some((r) => r.km >= s.gameBest - 0.005)) list.push({ km: s.gameBest, old: true });
+    list.sort((a, b) => b.km - a.km || (b.at || 0) - (a.at || 0));
+    return list.slice(0, n);
+  }
+
+  /** Завершений забіг: { mode: "game" | "sunday" | "trail", km?, dist?, time?, boost? } */
   function record(run) {
     const s = state.stats;
     touchStreak();
@@ -84,6 +106,7 @@
     } else if (run.mode === "game") {
       s.totalKm += run.km;
       s.gameBest = Math.max(s.gameBest, run.km);
+      rememberRun(run);
       if (run.km >= 10) earned.push("game10");
       if (run.km >= 42.2) earned.push("game42");
     } else {
@@ -224,6 +247,7 @@
     isAvailable,
     itemName,
     record,
+    bestRuns,
     placed,
     toast,
     boosts: () => boosts,

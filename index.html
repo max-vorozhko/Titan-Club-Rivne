@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=34">
+  <link rel="stylesheet" href="css/style.css?v=35">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -102,8 +102,11 @@
             <input class="lb-form__input" id="start-name-input" maxlength="20" placeholder="Твоє ім'я для рейтингу" autocomplete="nickname">
           </div>
           <p class="start-who" id="start-who" hidden></p>
+          <label class="boost-toggle" id="game-boost-start" hidden><input type="checkbox"> ⚡ Розгін на цей забіг <small></small></label>
+          <button class="boost-promo" data-goto-boost type="button" id="game-promo">⚡ <b>Розгін</b>: стартуй зі швидкістю 3-го км і швидше добирайся до рекорду. Отримай за донат або промокод →</button>
           <button class="btn btn--primary" id="btn-start">Старт!</button>
           <p class="overlay__best">Рекорд: <span id="best-start">0.00</span> км</p>
+          <div class="best-runs" id="best-runs-start" hidden></div>
           <button class="link" data-help="help-game" type="button">❓ Як грати</button>
         </div>
 
@@ -115,7 +118,11 @@
             <div><span class="result__val" id="over-coins">0</span><span class="result__lbl">монет</span></div>
             <div><span class="result__val" id="over-pace">—</span><span class="result__lbl">мітка</span></div>
           </div>
+          <p class="overlay__vs" id="over-vs" hidden></p>
           <p class="overlay__best">Рекорд: <span id="best-over">0.00</span> км</p>
+          <div class="best-runs" id="best-runs-over" hidden></div>
+          <p class="overlay__hint" id="over-boost-hint" hidden></p>
+          <label class="boost-toggle" id="game-boost-over" hidden><input type="checkbox"> ⚡ Розгін на цей забіг <small></small></label>
           <form class="lb-form" id="lb-form" hidden>
             <input class="lb-form__input" id="lb-name" maxlength="20" placeholder="Твоє ім'я" autocomplete="nickname" required>
             <button class="btn btn--small" type="submit">У рейтинг</button>
@@ -435,7 +442,7 @@
 
         <div class="ppane" id="pane-boost" hidden>
           <div class="boost-card">
-            <p>Буст на <b>один забіг</b> у «Неділі» чи «Трейлі»: золоті кросівки й ≈ <b>−3 с/км</b> до темпу. Результат у таблиці позначається ⚡.</p>
+            <p>Буст на <b>один забіг</b>: у «Неділі» чи «Трейлі» — золоті кросівки й ≈ <b>−3 с/км</b> до темпу; у «Бігу» — <b>розгін</b>: старт зі швидкістю 3-го км (кілометри рахуються з нуля). Результат у таблиці позначається ⚡.</p>
             <p class="boost-card__count">У тебе: <b id="profile-boosts">0</b> шт.</p>
             <a class="btn btn--primary btn--wide" id="profile-donate" target="_blank" rel="noopener" hidden>Задонатити 30 грн на банку</a>
             <p class="muted small-left" id="profile-donate-hint"></p>
@@ -469,6 +476,7 @@
         <li>⚡ гель — прискорення й невразливість</li>
         <li>🪙 титан-монети — для рекорду</li>
         <li>Шлагбауми (з 4 км) — лише подвійним стрибком</li>
+        <li>⚡ <b>Розгін</b> (за промокод) — один забіг стартує зі швидкістю 3-го км. Кілометри рахуються з нуля, результат у таблиці з ⚡</li>
       </ul>
       <button class="btn btn--primary" data-close type="button">Зрозуміло</button>
     </div>
@@ -521,26 +529,26 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=34"></script>
-  <script src="js/kyiv.js?v=34"></script>
-  <script src="js/analytics.js?v=34"></script>
-  <script src="js/errors.js?v=34"></script>
-  <script src="js/leaderboard.js?v=34"></script>
-  <script src="js/share.js?v=34"></script>
-  <script src="js/avatar.js?v=34"></script>
-  <script src="js/profile.js?v=34"></script>
-  <script src="js/rewards.js?v=34"></script>
-  <script src="js/game.js?v=34"></script>
-  <script src="js/app.js?v=34"></script>
-  <script src="js/sunday.js?v=34"></script>
-  <script src="js/sunday-ui.js?v=34"></script>
-  <script src="js/trail.js?v=34"></script>
-  <script src="js/trail-ui.js?v=34"></script>
-  <script src="js/draw.js?v=34"></script>
-  <script src="js/profile-ui.js?v=34"></script>
-  <script src="js/account.js?v=34"></script>
-  <script src="js/club.js?v=34"></script>
-  <script src="js/club-ui.js?v=34"></script>
-  <script src="js/pwa.js?v=34"></script>
+  <script src="js/config.js?v=35"></script>
+  <script src="js/kyiv.js?v=35"></script>
+  <script src="js/analytics.js?v=35"></script>
+  <script src="js/errors.js?v=35"></script>
+  <script src="js/leaderboard.js?v=35"></script>
+  <script src="js/share.js?v=35"></script>
+  <script src="js/avatar.js?v=35"></script>
+  <script src="js/profile.js?v=35"></script>
+  <script src="js/rewards.js?v=35"></script>
+  <script src="js/game.js?v=35"></script>
+  <script src="js/app.js?v=35"></script>
+  <script src="js/sunday.js?v=35"></script>
+  <script src="js/sunday-ui.js?v=35"></script>
+  <script src="js/trail.js?v=35"></script>
+  <script src="js/trail-ui.js?v=35"></script>
+  <script src="js/draw.js?v=35"></script>
+  <script src="js/profile-ui.js?v=35"></script>
+  <script src="js/account.js?v=35"></script>
+  <script src="js/club.js?v=35"></script>
+  <script src="js/club-ui.js?v=35"></script>
+  <script src="js/pwa.js?v=35"></script>
 </body>
 </html>
