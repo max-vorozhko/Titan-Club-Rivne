@@ -502,7 +502,7 @@ body.is-home .topbar { display: none; }
 .dr-sprint.is-on { background: var(--accent); color: var(--ink); transform: translateY(3px); box-shadow: 0 1px 0 var(--brand-dark); }
 .dr-small { flex: 1 1 0; padding: 10px 14px; font-size: 16px; }
 .dr-controls .btn:disabled { opacity: .4; cursor: default; }
-.dr-help { align-self: center; }
+.dr-links { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; }
 
 .dr-result { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; border-radius: var(--radius); background: var(--surface); text-align: center; }
 .dr-result .stats { width: 100%; text-align: left; }
@@ -514,3 +514,6 @@ body.is-home .topbar { display: none; }
 
 /* Сім вкладок у шапці на вузьких екранах */
 .tabs__btn { padding-left: 10px; padding-right: 10px; }
+.dr-result .lb-form { width: min(360px, 100%); }
+/* Чотири розділи рейтингу в один рядок */
+.lb-modes .seg__btn { white-space: nowrap; padding: 8px 4px; font-size: 14px; }

@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=30">
+  <link rel="stylesheet" href="css/style.css?v=32">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -331,7 +331,10 @@
           <button class="btn btn--ghost dr-small" id="dr-finish" type="button" disabled>Фініш</button>
           <button class="btn btn--ghost dr-small" id="dr-restart" type="button">Спочатку</button>
         </div>
-        <button class="link dr-help" data-help="help-draw" type="button">❓ Як грати</button>
+        <div class="dr-links">
+          <button class="link" data-help="help-draw" type="button">❓ Як грати</button>
+          <button class="link" id="dr-open-board" type="button">🏆 Рейтинг</button>
+        </div>
 
         <div class="dr-result" id="dr-result" hidden aria-live="polite">
           <div class="dr-stars" id="dr-stars"></div>
@@ -342,12 +345,18 @@
             <div class="stat"><span class="stat__val" id="dr-rcover">0%</span><span class="stat__lbl">контур покрито</span></div>
             <div class="stat"><span class="stat__val" id="dr-best">0</span><span class="stat__lbl">рекорд цього малюнка</span></div>
           </div>
+          <p class="lb-status" id="dr-lb-status" hidden></p>
+          <form class="lb-form" id="dr-lb-form" hidden>
+            <input class="lb-form__input" id="dr-lb-name" maxlength="20" placeholder="Твоє ім'я" autocomplete="nickname" required>
+            <button class="btn btn--small" type="submit">У рейтинг</button>
+          </form>
           <img class="dr-card" id="dr-card" alt="Картинка результату для сторіс">
           <div class="overlay__actions">
             <button class="btn btn--primary" id="dr-again" type="button">Ще раз</button>
             <button class="btn btn--ghost" id="dr-next" type="button">Наступний</button>
           </div>
           <button class="btn btn--ghost" id="dr-share" type="button">Поділитись</button>
+          <button class="link" id="dr-result-board" type="button">🏆 Рейтинг цього малюнка</button>
           <div class="share-sheet" id="dr-share-sheet" hidden></div>
         </div>
       </div>
@@ -362,6 +371,7 @@
           <button class="seg__btn is-active" data-mode="game" type="button">🏃 Біг</button>
           <button class="seg__btn" data-mode="sunday" type="button">☕ Неділя</button>
           <button class="seg__btn" data-mode="trail" type="button">🏔️ Трейл</button>
+          <button class="seg__btn" data-mode="draw" type="button">✏️ Малюнок</button>
         </div>
         <div class="seg lb-dists" id="lb-dist" hidden></div>
         <p class="muted" id="lb-lead">Найдовші забіги в Titan Run серед учасників Titan Club Rivne.</p>
@@ -506,23 +516,23 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=30"></script>
-  <script src="js/analytics.js?v=30"></script>
-  <script src="js/leaderboard.js?v=30"></script>
-  <script src="js/share.js?v=30"></script>
-  <script src="js/avatar.js?v=30"></script>
-  <script src="js/profile.js?v=30"></script>
-  <script src="js/rewards.js?v=30"></script>
-  <script src="js/game.js?v=30"></script>
-  <script src="js/app.js?v=30"></script>
-  <script src="js/sunday.js?v=30"></script>
-  <script src="js/sunday-ui.js?v=30"></script>
-  <script src="js/trail.js?v=30"></script>
-  <script src="js/trail-ui.js?v=30"></script>
-  <script src="js/draw.js?v=30"></script>
-  <script src="js/profile-ui.js?v=30"></script>
-  <script src="js/club.js?v=30"></script>
-  <script src="js/club-ui.js?v=30"></script>
-  <script src="js/pwa.js?v=30"></script>
+  <script src="js/config.js?v=32"></script>
+  <script src="js/analytics.js?v=32"></script>
+  <script src="js/leaderboard.js?v=32"></script>
+  <script src="js/share.js?v=32"></script>
+  <script src="js/avatar.js?v=32"></script>
+  <script src="js/profile.js?v=32"></script>
+  <script src="js/rewards.js?v=32"></script>
+  <script src="js/game.js?v=32"></script>
+  <script src="js/app.js?v=32"></script>
+  <script src="js/sunday.js?v=32"></script>
+  <script src="js/sunday-ui.js?v=32"></script>
+  <script src="js/trail.js?v=32"></script>
+  <script src="js/trail-ui.js?v=32"></script>
+  <script src="js/draw.js?v=32"></script>
+  <script src="js/profile-ui.js?v=32"></script>
+  <script src="js/club.js?v=32"></script>
+  <script src="js/club-ui.js?v=32"></script>
+  <script src="js/pwa.js?v=32"></script>
 </body>
 </html>

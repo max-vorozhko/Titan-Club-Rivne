@@ -68,6 +68,36 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // «Малюнок дня»: найкращий результат гравця за малюнок, draw/{titan|heart|star|rivne}/runs/{uid}.
+    // key = бали·10000 − час у десятих секунди: більше — краще (спершу бали, при рівних швидший).
+    match /draw/{id}/runs/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && id in ['titan', 'heart', 'star', 'rivne']
+        && validDraw(request.resource.data, id)
+        && dayStartOk('key')
+        && (resource == null || request.resource.data.key >= resource.data.key);
+      allow delete: if false;
+    }
+
+    // Довжина контуру малюнка в умовних одиницях гри (js/draw.js)
+    function drawLen(id) {
+      return id == 'titan' ? 2646 : (id == 'heart' ? 2107 : (id == 'star' ? 2446 : 3440));
+    }
+
+    // Бали ≤ 700·покриття + 300, тож покриття ≥ (бали−300)/700. Бігун не швидший за 470 од/с, звідси мінімальний час
+    // (з 10% запасу): t/10 ≥ 0.9·покриття·довжина/470.
+    function validDraw(d, id) {
+      return d.keys().hasOnly(['name', 'points', 't', 'key', 'dayStart', 'updatedAt'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
+        && d.points is int && d.points >= 0 && d.points <= 1000
+        && d.t is int && d.t >= 10 && d.t <= 36000
+        && d.t * 329000 >= 9 * (d.points - 300) * drawLen(id)
+        && d.key == d.points * 10000 - d.t
+        && d.updatedAt == request.time;
+    }
+
     // Навіть з темпом, гелем і на спуску швидше ~2:40/км не буває, тож менше 150 с/км відхиляємо
     function validTrail(d, km) {
       return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'dayStart', 'updatedAt'])
