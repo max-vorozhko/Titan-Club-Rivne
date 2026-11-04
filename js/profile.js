@@ -79,7 +79,9 @@
     touchStreak();
     s.runs++;
     const earned = [];
-    if (run.mode === "game") {
+    if (run.mode === "draw") {
+      // «Малюнок дня»: кілометрів немає, лише лічильник забігів і серія днів
+    } else if (run.mode === "game") {
       s.totalKm += run.km;
       s.gameBest = Math.max(s.gameBest, run.km);
       if (run.km >= 10) earned.push("game10");
