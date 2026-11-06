@@ -196,6 +196,7 @@
     });
   }
 
+  let trainingToasted = false;
   const hasHeads = () => {
     const w = Profile.wallet();
     return !!w && w.heads + w.boosts > 0;
@@ -223,6 +224,11 @@
     await Profile.loadWallet();
     ["start", "over"].forEach((where) => Profile.renderBoostToggle($("game-boost-" + where), "head"));
     renderWallet();
+    const tr = Profile.training();
+    if (tr && tr.done && !trainingToasted) {
+      trainingToasted = true;
+      ui.toast("🏋️ Тренування завершено! Забери рівень у профілі");
+    }
     // Реклама розгону лише там, де в гравця немає розгонів і бустів
     $("game-promo").hidden = !Leaderboard.enabled || hasHeads();
   }
@@ -415,7 +421,7 @@
         (r) => `
         <li class="leaders__row${r.me ? " is-me" : ""}">
           <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
+          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${Leaderboard.lvlMark(r)}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
           <span></span>
           <span class="leaders__km">${fmt(r.time)}</span>
         </li>`
@@ -483,7 +489,7 @@
           ? data.rows.map((r) => `
             <li class="leaders__row${r.me ? " is-me" : ""}">
               <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-              <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із розгоном">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
+              <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із розгоном">⚡</span>' : ""}${Leaderboard.lvlMark(r)}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
               <span class="leaders__coins">🪙 ${r.coins}</span>
               <span class="leaders__km">${Number(r.km).toFixed(2)} км</span>
             </li>`).join("")

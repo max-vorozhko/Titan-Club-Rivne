@@ -323,6 +323,20 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .boost-toggle small { font-weight: 600; color: var(--muted); }
 .boost-mark { font-size: 14px; }
+.lvl-mark { display: inline-block; padding: 0 6px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 700; vertical-align: 1px; }
+
+/* Прокачка */
+.train { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.train-card { padding: 12px; border-radius: var(--radius); background: var(--bg); }
+.train-card__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 700; }
+.train-card__head b { font: 700 20px var(--font-display); text-transform: uppercase; letter-spacing: .5px; }
+.train-card small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.train-bar { height: 10px; margin: 8px 0; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.train-bar > i { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+.train-card .btn { width: 100%; margin-top: 4px; }
+.train-timer { margin: 6px 0 0; font-weight: 700; }
+.train-timer b { color: var(--brand); font-variant-numeric: tabular-nums; }
+.train-done { color: #1b7a3f; }
 .wallet { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; font-weight: 700; }
 .wallet small { color: var(--muted); font-weight: 600; }
 .wallet__gain { color: var(--brand); }
@@ -403,7 +417,7 @@ body.is-home .topbar { display: none; }
 .profile .stat { padding: 6px 8px; }
 .profile .stat__val { font-size: 17px; }
 .profile .stat__lbl { font-size: 11px; }
-.ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 14px 0 10px; }
+.ptabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 14px 0 10px; }
 .ptabs__btn {
   display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px;
   border: 2px solid var(--surface-2); border-radius: 12px; background: var(--surface); color: var(--ink);

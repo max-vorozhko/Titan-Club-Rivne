@@ -47,11 +47,13 @@ service cloud.firestore {
     }
 
     // Найшвидший можливий темп у грі ≈ 3:26/км (прискорення + гель), тож менше 200 с/км не буває
+    // З прокачкою (lvl > 0, до +10% швидкості) межа нижча: 205 с/км ÷ 1.1 ÷ 1.01 ≈ 185 → 180
     function validSunday(d, km) {
-      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'dayStart', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'lvl', 'dayStart', 'updatedAt'])
         && (!('boost' in d) || d.boost is bool)
+        && validLvl(d)
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
-        && d.time is int && d.time >= km * 200 && d.time <= km * 1800
+        && d.time is int && d.time >= km * (d.get('lvl', 0) > 0 ? 180 : 200) && d.time <= km * 1800
         && d.stumbles is int && d.stumbles >= 0 && d.stumbles <= 1000
         && d.updatedAt == request.time;
     }
@@ -99,11 +101,13 @@ service cloud.firestore {
     }
 
     // Навіть з темпом, гелем і на спуску швидше ~2:40/км не буває, тож менше 150 с/км відхиляємо
+    // З прокачкою (lvl > 0) швидше ≈ 130 с/км не буває
     function validTrail(d, km) {
-      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'dayStart', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'time', 'stumbles', 'boost', 'lvl', 'dayStart', 'updatedAt'])
         && (!('boost' in d) || d.boost is bool)
+        && validLvl(d)
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
-        && d.time is int && d.time >= km * 150 && d.time <= km * 3600
+        && d.time is int && d.time >= km * (d.get('lvl', 0) > 0 ? 130 : 150) && d.time <= km * 3600
         && d.stumbles is int && d.stumbles >= 0 && d.stumbles <= 2000
         && d.updatedAt == request.time;
     }
@@ -248,90 +252,148 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.lastCode == code;
     }
 
-    // Гаманець і бусти гравця profiles/{uid}. Кожен запис — рівно одна з дій, решта полів не змінюється:
+    // Гаманець, бусти й прокачка гравця profiles/{uid}. Кожен запис — рівно одна з дій; змінюватись можуть лише
+    // поля цієї дії (changed()), решта лишається як була:
     //   • новачок: стартові 50 монет (create), старий профіль без монет: те саме (update);
     //   • промокод: boosts +1 або coins +120 (на вибір гравця) разом із погашенням коду;
     //   • буст на старті: boosts −1 («Супер-кросівки») або heads −1 («Розгін» у «Бігу»);
     //   • заробіток: монети з «Бігу». Приріст не більший, ніж гравець міг зібрати за час після попереднього
     //     нарахування (≤ 1.2 монети/с + 30 запасу; чесний максимум ≈ 0.6/с);
-    //   • купівля «Розгону»: −100 монет, heads +1, не більше 5 на добу (buyDay — доба за київським часом, UTC+3).
+    //   • купівля «Розгону»: −100 монет, heads +1, не більше 5 на добу (buyDay — доба за київським часом, UTC+3);
+    //   • прокачка: старт тренування (−20×рівень монет, trainStart = час сервера), завершення (+1 рівень, коли минув
+    //     час), прискорення (15 монет за годину, що лишилась). Максимум рівня 10 на показник.
     match /profiles/{uid} {
       allow get: if request.auth != null && request.auth.uid == uid;
       allow create: if request.auth != null && request.auth.uid == uid
         && validProfile(request.resource.data)
         && (
-          (request.resource.data.boosts == 0
+          (request.resource.data.keys().hasOnly(['boosts', 'coins', 'heads', 'earnAt', 'updatedAt'])
+            && request.resource.data.boosts == 0
             && request.resource.data.coins == 50
             && request.resource.data.get('heads', 0) == 0
-            && request.resource.data.earnAt == request.time
-            && !('lastCode' in request.resource.data)
-            && !('buyDay' in request.resource.data) && !('buyN' in request.resource.data))
+            && request.resource.data.earnAt == request.time)
           // старі версії гри (без гаманця): перший промокод
-          || (request.resource.data.boosts == 1
-            && !('coins' in request.resource.data)
+          || (request.resource.data.keys().hasOnly(['boosts', 'lastCode', 'updatedAt'])
+            && request.resource.data.boosts == 1
             && redeemedNow(request.resource.data.lastCode))
         );
       allow update: if request.auth != null && request.auth.uid == uid
         && validProfile(request.resource.data)
-        && (
+        && profileOp(resource.data, request.resource.data, changed(), request.time);
+    }
+
+    // Дозволені дії над профілем: r — старий документ, n — новий, ch — змінені поля, t — час сервера
+    function profileOp(r, n, ch, t) {
+      return
           // гаманець створюється для старого профілю
-          (!('coins' in resource.data)
-            && request.resource.data.coins == 50
-            && request.resource.data.get('heads', 0) == 0
-            && request.resource.data.earnAt == request.time
-            && same('boosts', 0) && same('lastCode', ''))
+          (!('coins' in r)
+            && ch.hasOnly(['coins', 'heads', 'earnAt', 'updatedAt'])
+            && n.coins == 50
+            && n.get('heads', 0) == 0
+            && n.earnAt == t)
           // «Супер-кросівки» на старті
-          || (request.resource.data.boosts == resource.data.boosts - 1
-            && same('lastCode', '') && sameWallet())
+          || (ch.hasOnly(['boosts', 'updatedAt'])
+            && n.boosts == r.boosts - 1)
           // «Розгін» на старті
-          || (request.resource.data.get('heads', 0) == resource.data.get('heads', 0) - 1
-            && same('boosts', 0) && same('lastCode', '') && same('coins', 0) && same('earnAt', null)
-            && same('buyDay', 0) && same('buyN', 0))
-          // промокод
-          || (request.resource.data.boosts == resource.data.boosts + 1
-            && request.resource.data.get('lastCode', '') != resource.data.get('lastCode', '')
-            && redeemedNow(request.resource.data.lastCode)
-            && sameWallet())
-          // промокод на 120 монет замість буста
-          || (request.resource.data.get('coins', 0) == resource.data.get('coins', 0) + 120
-            && request.resource.data.get('lastCode', '') != resource.data.get('lastCode', '')
-            && redeemedNow(request.resource.data.lastCode)
-            && resource.data.get('earnAt', null) != null
-            && same('boosts', 0) && same('heads', 0) && same('earnAt', null)
-            && same('buyDay', 0) && same('buyN', 0))
+          || (ch.hasOnly(['heads', 'updatedAt'])
+            && n.heads == r.heads - 1)
+          // промокод: буст
+          || (ch.hasOnly(['boosts', 'lastCode', 'updatedAt'])
+            && n.boosts == r.boosts + 1
+            && redeemedNow(n.lastCode))
+          // промокод: 120 монет замість буста
+          || (ch.hasOnly(['coins', 'lastCode', 'updatedAt'])
+            && n.coins == r.coins + 120
+            && redeemedNow(n.lastCode))
           // заробіток монет
-          || (resource.data.get('earnAt', null) != null
-            && request.resource.data.get('coins', 0) > resource.data.get('coins', 0)
-            && request.resource.data.get('coins', 0) - resource.data.get('coins', 0)
-              <= 30 + (request.time - resource.data.earnAt).seconds() * 1.2
-            && request.resource.data.earnAt == request.time
-            && same('boosts', 0) && same('lastCode', '') && same('heads', 0)
-            && same('buyDay', 0) && same('buyN', 0))
+          || (ch.hasOnly(['coins', 'earnAt', 'updatedAt'])
+            && n.coins > r.coins
+            && n.coins - r.coins <= 30 + (t - r.earnAt).seconds() * 1.2
+            && n.earnAt == t)
           // купівля «Розгону»
-          || (request.resource.data.get('coins', 0) == resource.data.get('coins', 0) - 100
-            && request.resource.data.get('heads', 0) == resource.data.get('heads', 0) + 1
-            && request.resource.data.buyDay >= resource.data.get('buyDay', 0)
-            && request.resource.data.buyDay <= math.floor((request.time.toMillis() + 10800000) / 86400000)
-            && request.resource.data.buyDay >= math.floor((request.time.toMillis() + 10800000) / 86400000) - 1
-            && request.resource.data.buyN == (request.resource.data.buyDay == resource.data.get('buyDay', 0)
-              ? resource.data.get('buyN', 0) + 1 : 1)
-            && request.resource.data.buyN <= 5
-            && same('boosts', 0) && same('lastCode', '') && same('earnAt', null))
-        );
+          || (ch.hasOnly(['coins', 'heads', 'buyDay', 'buyN', 'updatedAt'])
+            && n.coins == r.coins - 100
+            && n.get('heads', 0) == r.get('heads', 0) + 1
+            && n.buyDay >= r.get('buyDay', 0)
+            && n.buyDay <= buyDayAt(t)
+            && n.buyDay >= buyDayAt(t) - 1
+            && n.buyN == (n.buyDay == r.get('buyDay', 0) ? r.get('buyN', 0) + 1 : 1)
+            && n.buyN <= 5)
+          // тренування: старт (−20 × наступний рівень монет, час старту = час сервера, одне тренування за раз)
+          || (ch.hasOnly(['coins', 'trainStat', 'trainStart', 'updatedAt'])
+            && !('trainStat' in r)
+            && n.trainStat in ['spd', 'end']
+            && lvlOf(r, n.trainStat) < 10
+            && n.trainStart == t
+            && n.coins == r.coins - 20 * (lvlOf(r, n.trainStat) + 1))
+          // тренування: завершення (+1 рівень, лише коли час минув за годинником сервера)
+          || (ch.hasOnly(['lvlSpd', 'lvlEnd', 'trainStat', 'trainStart', 'updatedAt'])
+            && 'trainStat' in r
+            && !('trainStat' in n)
+            && t >= trainEnd(r)
+            && n.get('lvlSpd', 0) == r.get('lvlSpd', 0) + (r.trainStat == 'spd' ? 1 : 0)
+            && n.get('lvlEnd', 0) == r.get('lvlEnd', 0) + (r.trainStat == 'end' ? 1 : 0))
+          // тренування: прискорення (15 монет за годину, що лишилась, ±3; початок «зсувається» в минуле)
+          || (ch.hasOnly(['coins', 'trainStart', 'updatedAt'])
+            && 'trainStat' in r
+            && t < trainEnd(r)
+            && n.trainStart < r.trainStart
+            && n.trainStart <= t - trainLen(r)
+            && n.coins <= r.coins
+            && skipOk(r.coins - n.coins, skipCost(r, t)));
     }
 
-    // Поле не змінилося (відсутнє поле = значення за замовчуванням)
-    function same(field, fallback) {
-      return request.resource.data.get(field, fallback) == resource.data.get(field, fallback);
+    function skipOk(paid, cost) {
+      return paid >= cost - 3 && paid <= cost + 3;
     }
 
-    // Усі поля гаманця без змін
-    function sameWallet() {
-      return same('coins', 0) && same('heads', 0) && same('earnAt', null) && same('buyDay', 0) && same('buyN', 0);
+    // Які поля документа змінилися цим записом (додані, змінені, видалені)
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Доба за київським часом (UTC+3, без урахування зимового зсуву в 1 годину)
+    function buyDayAt(t) {
+      return math.floor((t.toMillis() + 10800000) / 86400000.0);
+    }
+
+    // Прокачка: рівень показника, що тренується (spd — швидкість, end — витривалість); рівні 1–5 по 4 год, 6–10 по 8 год
+    function lvlOf(d, stat) {
+      return stat == 'spd' ? d.get('lvlSpd', 0) : d.get('lvlEnd', 0);
+    }
+
+    function trainLen(d) {
+      return duration.value(lvlOf(d, d.trainStat) + 1 <= 5 ? 4 : 8, 'h');
+    }
+
+    function trainEnd(d) {
+      return d.trainStart + trainLen(d);
+    }
+
+    // 15 монет за кожну годину, що лишилась (округлення вгору)
+    function skipCost(d, t) {
+      return math.ceil((trainEnd(d) - t).seconds() * 15.0 / 3600.0);
+    }
+
+    // Рівень прокачки в таблицях (lvl = сума рівнів двох показників): не більший за справжній у profiles/{uid}
+    function profileLvl() {
+      return exists(/databases/$(database)/documents/profiles/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.get('lvlSpd', 0)
+          + get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.get('lvlEnd', 0)
+        : 0;
+    }
+
+    function validLvl(d) {
+      return !('lvl' in d) || (d.lvl is int && d.lvl >= 1 && d.lvl <= 20 && d.lvl <= profileLvl());
     }
 
     function validProfile(d) {
-      return d.keys().hasOnly(['boosts', 'lastCode', 'coins', 'heads', 'earnAt', 'buyDay', 'buyN', 'updatedAt'])
+      return d.keys().hasOnly(['boosts', 'lastCode', 'coins', 'heads', 'earnAt', 'buyDay', 'buyN', 'lvlSpd', 'lvlEnd', 'trainStat', 'trainStart', 'updatedAt'])
+        && (!('lvlSpd' in d) || (d.lvlSpd is int && d.lvlSpd >= 0 && d.lvlSpd <= 10))
+        && (!('lvlEnd' in d) || (d.lvlEnd is int && d.lvlEnd >= 0 && d.lvlEnd <= 10))
+        && (!('trainStat' in d) || d.trainStat in ['spd', 'end'])
+        && (!('trainStart' in d) || d.trainStart is timestamp)
+        && (('trainStat' in d) == ('trainStart' in d))
         && d.boosts is int && d.boosts >= 0 && d.boosts <= 100
         && (!('lastCode' in d) || (d.lastCode is string && d.lastCode.size() <= 40))
         && (!('coins' in d) || (d.coins is int && d.coins >= 0 && d.coins <= 100000))
@@ -351,13 +413,14 @@ service cloud.firestore {
     }
 
     function validScore(d) {
-      return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'boost', 'dayStart', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'km', 'coins', 'time', 'boost', 'lvl', 'dayStart', 'updatedAt'])
         && (!('boost' in d) || d.boost is bool)
+        && validLvl(d)
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 20
         && d.km is number && d.km > 0 && d.km <= 60
         && d.time is number && d.time > 0
-        // Найбільша можлива середня швидкість у грі ≈ 0.263 км/с (максимум + гель); «розгін» максимум не змінює
-        && d.km <= d.time * 0.27
+        // Найбільша можлива середня швидкість у грі ≈ 0.263 км/с (максимум + гель); «розгін» максимум не змінює; з прокачкою (lvl > 0, +10% швидкості) до 0.30
+        && d.km <= d.time * (d.get('lvl', 0) > 0 ? 0.30 : 0.27)
         && d.coins is int && d.coins >= 0 && d.coins <= d.km * 120
         && d.updatedAt == request.time;
     }

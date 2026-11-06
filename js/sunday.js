@@ -259,6 +259,7 @@
       this.stopIndex = 0;
       this.finished = false;
       this.boosted = false;
+      this.bonus = { speed: 1, drain: 1, lvl: 0 };
       this.draw();
     }
 
@@ -281,6 +282,7 @@
     start(distKm, boosted) {
       this.setup(weekInfo(0), distKm);
       this.boosted = !!boosted;
+      this.bonus = Profile.bonus(); // прокачка
       this.running = true;
       this.paused = false;
       this.last = performance.now();
@@ -341,12 +343,13 @@
       if (this.stumble > 0) mult *= STUMBLE;
       if (this.energy <= 0) mult *= TIRED;
       if (this.boosted) mult *= BOOST;
+      mult *= this.bonus.speed;
       p.speed += (GROUP_SPEED * mult - p.speed) * Math.min(1, dt * 4);
       p.pos += p.speed * dt;
       this.groupPos = Math.min(this.track.end + 400, this.groupPos + GROUP_SPEED * dt);
 
       this.withGroup = Math.abs(p.pos - this.groupPos) < GROUP_RADIUS;
-      this.energy -= dt * (0.5 + (sprint ? 4.5 : 0));
+      this.energy -= dt * (0.5 + (sprint ? 4.5 : 0)) * this.bonus.drain;
       if (this.withGroup && !sprint) this.energy += dt * 1.6;
       this.energy = Math.max(0, Math.min(100, this.energy));
 

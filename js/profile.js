@@ -184,12 +184,32 @@
   const stampNow = () => firebase.firestore.FieldValue.serverTimestamp();
 
   function toWallet(d) {
-    return { boosts: d.boosts || 0, heads: d.heads || 0, coins: d.coins || 0, buyDay: d.buyDay || 0, buyN: d.buyN || 0 };
+    return {
+      boosts: d.boosts || 0,
+      heads: d.heads || 0,
+      coins: d.coins || 0,
+      buyDay: d.buyDay || 0,
+      buyN: d.buyN || 0,
+      lvlSpd: d.lvlSpd || 0,
+      lvlEnd: d.lvlEnd || 0,
+      trainStat: d.trainStat || "",
+      trainStart: d.trainStart && d.trainStart.toMillis ? d.trainStart.toMillis() : 0,
+    };
+  }
+
+  // Рівні запам'ятовуємо на пристрої, щоб бонус діяв і до завантаження гаманця
+  const LEVELS_KEY = "titan.levels.v1";
+  function remember(w) {
+    wallet = w;
+    try {
+      localStorage.setItem(LEVELS_KEY, JSON.stringify({ spd: w.lvlSpd, end: w.lvlEnd }));
+    } catch (e) {}
+    return w;
   }
 
   // Читає профіль; новачкові створює гаманець зі стартовими монетами, старому профілю (з бустами) додає гаманець
   async function loadWallet() {
-    if (!Leaderboard.enabled) return (wallet = toWallet({}));
+    if (!Leaderboard.enabled) return remember(toWallet({}));
     if (loading) return loading;
     loading = (async () => {
       try {
@@ -202,7 +222,7 @@
           await ref.set(data);
           data = (await ref.get()).data();
         }
-        wallet = toWallet(data);
+        remember(toWallet(data));
         await flushPending();
       } catch (e) {
         wallet = wallet || toWallet({});
@@ -247,7 +267,7 @@
     if (!snap.exists || snap.data().coins === undefined) throw new Error("no_wallet");
     const data = snap.data();
     await ref.set({ ...data, coins: data.coins + n, earnAt: stampNow(), updatedAt: stampNow() });
-    wallet = toWallet({ ...data, coins: data.coins + n });
+    remember(toWallet({ ...data, coins: data.coins + n }));
   }
 
   /** Монети за забіг у «Бігу»: додаємо в гаманець (якщо не вийшло — запам'ятовуємо на потім) */
@@ -282,7 +302,7 @@
     const buyN = data.buyDay === day ? (data.buyN || 0) + 1 : 1;
     const next = { ...data, coins: data.coins - HEAD_PRICE, heads: (data.heads || 0) + 1, buyDay: day, buyN, updatedAt: stampNow() };
     await ref.set(next);
-    wallet = toWallet(next);
+    remember(toWallet(next));
     return wallet;
   }
 
@@ -307,7 +327,7 @@
     } catch (e) {
       throw new Error("invalid_code");
     }
-    wallet = toWallet(next);
+    remember(toWallet(next));
     return wallet;
   }
 
@@ -323,8 +343,94 @@
     else throw new Error("no_boosts");
     next.updatedAt = stampNow();
     await ref.set(next);
-    wallet = toWallet(next);
+    remember(toWallet(next));
     return wallet;
+  }
+
+  // ---------- Прокачка: тренування з таймерами (правила Firestore перевіряють усе на сервері) ----------
+
+  const STATS = {
+    spd: { key: "lvlSpd", name: "Швидкість", icon: "⚡", hint: "біжиш швидше: до +10% до швидкості в «Бігу», «Неділі» й «Трейлі»" },
+    end: { key: "lvlEnd", name: "Витривалість", icon: "🫁", hint: "енергія витрачається повільніше: до −10%" },
+  };
+  const MAX_LEVEL = 10;
+  const SKIP_PER_HOUR = 15;
+
+  const trainHours = (nextLevel) => (nextLevel <= 5 ? 4 : 8);
+  const trainCost = (nextLevel) => 20 * nextLevel;
+
+  /** Стан тренування: { active, stat, endsAt, left (мс), done, nextLevel } або null */
+  function training() {
+    const w = wallet;
+    if (!w || !w.trainStat) return null;
+    const nextLevel = w[STATS[w.trainStat].key] + 1;
+    const endsAt = w.trainStart + trainHours(nextLevel) * 3600 * 1000;
+    const left = endsAt - Date.now();
+    return { stat: w.trainStat, nextLevel, endsAt, left: Math.max(0, left), done: left <= 0 };
+  }
+
+  // Ціна прискорення: 15 монет за кожну годину, що лишилась (округлення вгору)
+  const skipCost = (leftMs) => Math.ceil((leftMs / 3600000) * SKIP_PER_HOUR);
+
+  async function trainingWrite(change) {
+    const { ref } = await profileRef();
+    const snap = await ref.get();
+    const data = snap.data();
+    const next = change({ ...data });
+    next.updatedAt = stampNow();
+    await ref.set(next);
+    const fresh = (await ref.get()).data();
+    return remember(toWallet(fresh));
+  }
+
+  async function startTraining(stat) {
+    const w = await loadWallet();
+    if (!STATS[stat]) throw new Error("bad_stat");
+    if (w.trainStat) throw new Error("busy");
+    const next = w[STATS[stat].key] + 1;
+    if (next > MAX_LEVEL) throw new Error("max");
+    if (w.coins < trainCost(next)) throw new Error("no_coins");
+    return trainingWrite((d) => ({ ...d, coins: d.coins - trainCost(next), trainStat: stat, trainStart: stampNow() }));
+  }
+
+  async function claimTraining() {
+    const t = training();
+    if (!t) throw new Error("none");
+    return trainingWrite((d) => {
+      const key = STATS[t.stat].key;
+      const out = { ...d, [key]: (d[key] || 0) + 1 };
+      delete out.trainStat;
+      delete out.trainStart;
+      return out;
+    });
+  }
+
+  async function speedUpTraining() {
+    const t = training();
+    if (!t || t.done) throw new Error("none");
+    const price = skipCost(t.left);
+    if (wallet.coins < price) throw new Error("no_coins");
+    const len = trainHours(t.nextLevel) * 3600 * 1000;
+    // «Зсуваємо» початок так, щоб тренування вже закінчилось (із запасом на розбіжність годинників)
+    const startedAt = firebase.firestore.Timestamp.fromMillis(Date.now() - len - 30 * 60 * 1000);
+    return trainingWrite((d) => ({ ...d, coins: d.coins - price, trainStart: startedAt }));
+  }
+
+  // Бонуси прокачки: speed — множник швидкості (до 1.10), drain — множник витрати енергії (до 0.90)
+  function bonus() {
+    let spd = 0;
+    let end = 0;
+    if (wallet) {
+      spd = wallet.lvlSpd;
+      end = wallet.lvlEnd;
+    } else {
+      try {
+        const c = JSON.parse(localStorage.getItem(LEVELS_KEY));
+        spd = Math.max(0, Math.min(MAX_LEVEL, (c && c.spd) | 0));
+        end = Math.max(0, Math.min(MAX_LEVEL, (c && c.end) | 0));
+      } catch (e) {}
+    }
+    return { speed: 1 + 0.01 * spd, drain: 1 - 0.01 * end, lvl: spd + end };
   }
 
   // ---------- Перемикач «Взути супер-кросівки» («Неділя», «Трейл») і «Розгін» («Біг») ----------
@@ -376,6 +482,17 @@
     buyHead,
     buysLeft,
     HEAD_PRICE,
+    STATS,
+    MAX_LEVEL,
+    trainHours,
+    trainCost,
+    skipCost,
+    training,
+    startTraining,
+    claimTraining,
+    speedUpTraining,
+    bonus,
+    level: () => bonus().lvl,
     PROMO_COINS,
     BUY_LIMIT,
     START_COINS,
