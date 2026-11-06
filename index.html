@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=37">
+  <link rel="stylesheet" href="css/style.css?v=38">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -430,6 +430,7 @@
           <button class="ptabs__btn is-active" data-pane="look" type="button"><span>👕</span>Вигляд</button>
           <button class="ptabs__btn" data-pane="goals" type="button"><span>🏅</span>Ачівки й задачі</button>
           <button class="ptabs__btn" data-pane="boost" type="button"><span>⚡</span>Буст-кросівки</button>
+          <button class="ptabs__btn" data-pane="train" type="button"><span>🏋️</span>Тренування</button>
         </div>
 
         <div class="ppane" id="pane-look">
@@ -440,6 +441,14 @@
         <div class="ppane" id="pane-goals" hidden>
           <p class="muted small-left">Виконуй задачі й отримуй мерч для свого бігуна.</p>
           <ul class="achievements" id="profile-achievements"></ul>
+        </div>
+
+        <div class="ppane" id="pane-train" hidden>
+          <div class="boost-card">
+            <p>Тренуй показники, і бігун стане швидшим та витривалішим. Максимум <b>+10%</b> на показник; рівень видно біля імені в таблицях (★). Тренування триває кілька годин, прискорити його можна за монети.</p>
+            <p class="boost-card__count">🪙 Монети: <b id="train-coins">0</b></p>
+            <div class="train" id="train-list"></div>
+          </div>
         </div>
 
         <div class="ppane" id="pane-boost" hidden>
@@ -542,26 +551,26 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=37"></script>
-  <script src="js/kyiv.js?v=37"></script>
-  <script src="js/analytics.js?v=37"></script>
-  <script src="js/errors.js?v=37"></script>
-  <script src="js/leaderboard.js?v=37"></script>
-  <script src="js/share.js?v=37"></script>
-  <script src="js/avatar.js?v=37"></script>
-  <script src="js/profile.js?v=37"></script>
-  <script src="js/rewards.js?v=37"></script>
-  <script src="js/game.js?v=37"></script>
-  <script src="js/app.js?v=37"></script>
-  <script src="js/sunday.js?v=37"></script>
-  <script src="js/sunday-ui.js?v=37"></script>
-  <script src="js/trail.js?v=37"></script>
-  <script src="js/trail-ui.js?v=37"></script>
-  <script src="js/draw.js?v=37"></script>
-  <script src="js/profile-ui.js?v=37"></script>
-  <script src="js/account.js?v=37"></script>
-  <script src="js/club.js?v=37"></script>
-  <script src="js/club-ui.js?v=37"></script>
-  <script src="js/pwa.js?v=37"></script>
+  <script src="js/config.js?v=38"></script>
+  <script src="js/kyiv.js?v=38"></script>
+  <script src="js/analytics.js?v=38"></script>
+  <script src="js/errors.js?v=38"></script>
+  <script src="js/leaderboard.js?v=38"></script>
+  <script src="js/share.js?v=38"></script>
+  <script src="js/avatar.js?v=38"></script>
+  <script src="js/profile.js?v=38"></script>
+  <script src="js/rewards.js?v=38"></script>
+  <script src="js/game.js?v=38"></script>
+  <script src="js/app.js?v=38"></script>
+  <script src="js/sunday.js?v=38"></script>
+  <script src="js/sunday-ui.js?v=38"></script>
+  <script src="js/trail.js?v=38"></script>
+  <script src="js/trail-ui.js?v=38"></script>
+  <script src="js/draw.js?v=38"></script>
+  <script src="js/profile-ui.js?v=38"></script>
+  <script src="js/account.js?v=38"></script>
+  <script src="js/club.js?v=38"></script>
+  <script src="js/club-ui.js?v=38"></script>
+  <script src="js/pwa.js?v=38"></script>
 </body>
 </html>

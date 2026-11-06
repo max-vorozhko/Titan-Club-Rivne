@@ -169,10 +169,108 @@
     }
   });
 
+  // ---------- Тренування ----------
+  let trainTimer = null;
+  const hm = (ms) => {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  };
+
+  function renderTraining() {
+    const w = Profile.wallet();
+    const list = $("train-list");
+    if (!w) {
+      list.innerHTML = '<p class="muted">Завантажую…</p>';
+      return;
+    }
+    $("train-coins").textContent = w.coins;
+    const t = Profile.training();
+    list.innerHTML = Object.entries(Profile.STATS)
+      .map(([id, st]) => {
+        const lvl = w[st.key];
+        const next = lvl + 1;
+        const mine = t && t.stat === id;
+        let action;
+        if (mine && t.done) action = `<p class="train-timer train-done">✅ Тренування завершено</p><button class="btn btn--primary btn--small" data-train="claim" type="button">Забрати рівень ${t.nextLevel}</button>`;
+        else if (mine) {
+          const cost = Profile.skipCost(t.left);
+          action = `<p class="train-timer">⏳ Лишилось <b data-left="${t.endsAt}">${hm(t.left)}</b></p><button class="btn btn--small" data-train="skip" type="button"${w.coins < cost ? " disabled" : ""}>Прискорити за ${cost} 🪙</button>`;
+        } else if (lvl >= Profile.MAX_LEVEL) action = '<p class="train-timer">Максимальний рівень 🏆</p>';
+        else if (t) action = '<button class="btn btn--small" type="button" disabled>Іде інше тренування</button>';
+        else {
+          const cost = Profile.trainCost(next);
+          action = `<button class="btn btn--small" data-train="start" data-stat="${id}" type="button"${w.coins < cost ? " disabled" : ""}>Тренувати до рівня ${next} · ${cost} 🪙 · ${Profile.trainHours(next)} год</button>`;
+        }
+        return `<div class="train-card">
+          <div class="train-card__head"><b>${st.icon} ${st.name}</b><span>Рівень ${lvl}/${Profile.MAX_LEVEL} · +${lvl}%</span></div>
+          <div class="train-bar"><i style="width:${lvl * 10}%"></i></div>
+          <small>${st.hint}</small>
+          ${action}
+        </div>`;
+      })
+      .join("");
+  }
+
+  async function refreshTraining() {
+    if (!Leaderboard.enabled) {
+      $("train-list").innerHTML = '<p class="muted">Прокачка поки недоступна.</p>';
+      return;
+    }
+    await Profile.loadWallet();
+    renderTraining();
+  }
+
+  // Раз на секунду оновлюємо таймер; коли час вийшов — перемальовуємо кнопки
+  function startTrainingTicker() {
+    stopTrainingTicker();
+    refreshTraining();
+    trainTimer = setInterval(() => {
+      const el = document.querySelector("#train-list [data-left]");
+      if (!el) return;
+      const left = Number(el.dataset.left) - Date.now();
+      if (left <= 0) renderTraining();
+      else el.textContent = hm(left);
+    }, 1000);
+  }
+
+  function stopTrainingTicker() {
+    clearInterval(trainTimer);
+    trainTimer = null;
+  }
+
+  $("train-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-train]");
+    if (!btn) return;
+    btn.disabled = true;
+    const what = btn.dataset.train;
+    try {
+      if (what === "start") {
+        await Profile.startTraining(btn.dataset.stat);
+        Profile.toast("🏋️ Тренування розпочато!");
+      } else if (what === "claim") {
+        const w = await Profile.claimTraining();
+        Profile.toast(`🎉 Новий рівень! Разом ★${w.lvlSpd + w.lvlEnd}`);
+      } else if (what === "skip") {
+        await Profile.speedUpTraining();
+        await Profile.claimTraining();
+        Profile.toast("⚡ Тренування прискорено й завершено!");
+      }
+    } catch (err) {
+      Profile.toast(err.message === "no_coins" ? "Не вистачає монет" : "Не вдалося 😕 Спробуй ще раз");
+      await Profile.loadWallet();
+    }
+    renderTraining();
+  });
+
   // Розділи профілю: Вигляд / Ачівки й задачі / Буст-кросівки — щоб не гортати донизу
   function showPane(name) {
     document.querySelectorAll("#profile-tabs .ptabs__btn").forEach((b) => b.classList.toggle("is-active", b.dataset.pane === name));
-    ["look", "goals", "boost"].forEach((p) => ($("pane-" + p).hidden = p !== name));
+    ["look", "goals", "boost", "train"].forEach((p) => ($("pane-" + p).hidden = p !== name));
+    if (name === "train") startTrainingTicker();
+    else stopTrainingTicker();
   }
 
   $("profile-tabs").addEventListener("click", (e) => {
@@ -183,6 +281,7 @@
   document.querySelectorAll(".tabs__btn").forEach((btn) =>
     btn.addEventListener("click", () => {
       if (btn.dataset.tab === "profile") render();
+      else stopTrainingTicker();
     })
   );
 

@@ -67,6 +67,7 @@
       this.coins = 0;
       this.boost = 0;
       this.head = 0;
+      this.bonus = { speed: 1, drain: 1, lvl: 0 };
       this.items = [];
       this.particles = [];
       this.nextObstacle = 1.2;
@@ -79,6 +80,7 @@
     start(headStart) {
       this.reset();
       this.head = headStart ? HEAD_START_KM : 0;
+      this.bonus = Profile.bonus(); // прокачка: speed (до ×1.10) і drain (до ×0.90)
       this.running = true;
       this.last = performance.now();
       requestAnimationFrame((t) => this.loop(t));
@@ -120,10 +122,10 @@
       const p = this.player;
       const boosted = this.boost > 0;
       this.speed = Math.min(MAX_SPEED, START_SPEED + this.level * 22);
-      const v = this.speed * (boosted ? 1.35 : 1);
+      const v = this.speed * (boosted ? 1.35 : 1) * this.bonus.speed;
       this.dist += v * dt;
       this.boost = Math.max(0, this.boost - dt);
-      this.energy -= dt * (2.6 + this.km * 0.08);
+      this.energy -= dt * (2.6 + this.km * 0.08) * this.bonus.drain;
 
       // Гравітація
       p.vy += GRAVITY * dt;

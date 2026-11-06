@@ -116,7 +116,7 @@
         (r) => `
         <li class="leaders__row${r.me ? " is-me" : ""}">
           <span class="leaders__place">${MEDALS[r.place - 1] || r.place}</span>
-          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
+          <span class="leaders__name">${escapeHtml(r.name)}${r.boost ? ' <span class="boost-mark" title="Результат із бустом «Супер-кросівки»">⚡</span>' : ""}${Leaderboard.lvlMark(r)}${r.me ? " <small>(ти)</small>" : ""}${Leaderboard.moveBadge(r)}</span>
           <span></span>
           <span class="leaders__km">${formatTime(r.time)}</span>
         </li>`

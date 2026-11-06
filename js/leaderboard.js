@@ -125,10 +125,28 @@
     const { scores, uid } = await connect();
     const snap = await scores.get();
     const all = withMoves(snap.docs.map((d) => ({ id: d.id, data: d.data() })), "km", false, uid);
-    const rows = all.slice(0, TOP_N).map((r) => ({ place: r.place, name: r.data.name, km: r.data.km, coins: r.data.coins, boost: !!r.data.boost, me: r.me, move: r.move, isNew: r.isNew }));
+    const rows = all.slice(0, TOP_N).map((r) => ({ place: r.place, name: r.data.name, km: r.data.km, coins: r.data.coins, boost: !!r.data.boost, lvl: r.data.lvl || 0, me: r.me, move: r.move, isNew: r.isNew }));
     const mine = all.find((r) => r.me);
     const me = mine ? { place: rankOf(mine.data.km, all.map((r) => r.data.km), false), km: mine.data.km } : null;
     return { rows, me, total: all.length };
+  }
+
+  // Рівень прокачки пишемо в результат (правила звіряють його з профілем). Якщо запис із рівнем відхилили
+  // (наприклад, кеш рівнів застарів), пробуємо без нього.
+  async function setWithLevel(ref, doc) {
+    const lvl = window.Profile ? Profile.level() : 0;
+    if (lvl > 0) {
+      try {
+        await ref.set({ ...doc, lvl });
+        return;
+      } catch (e) {}
+    }
+    await ref.set(doc);
+  }
+
+  // Позначка рівня біля імені в таблицях
+  function lvlMark(r) {
+    return r && r.lvl > 0 ? ` <span class="lvl-mark" title="Рівень прокачки: ${r.lvl}">★${r.lvl}</span>` : "";
   }
 
   async function submit(run) {
@@ -158,7 +176,7 @@
       };
       // «Розгін» пишемо лише для забігів із ним: звичайні результати сумісні й зі старими правилами
       if (run.boost) doc.boost = true;
-      await ref.set(doc);
+      await setWithLevel(ref, doc);
     }
     return { best, place: await placeOf(scores, best) };
   }
@@ -187,7 +205,7 @@
       // boost пишемо лише для забігів із бустом: звичайні результати сумісні й зі старими правилами
       const doc = { name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), dayStart, updatedAt: stamp };
       if (run.boost) doc.boost = true;
-      await ref.set(doc);
+      await setWithLevel(ref, doc);
     }
     const faster = await countOf(runs.where("time", "<", best));
     return { best, place: faster === null ? null : faster + 1 };
@@ -198,7 +216,7 @@
     const { db, uid } = await connect();
     if (!(opts && opts.moves)) {
       const snap = await sundayRuns(db, week, dist).orderBy("time").limit(limit || TOP_N).get();
-      return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, boost: !!d.data().boost, me: d.id === uid }));
+      return snap.docs.map((d, i) => ({ place: i + 1, name: d.data().name, time: d.data().time, boost: !!d.data().boost, lvl: d.data().lvl || 0, me: d.id === uid }));
     }
     const [snap, prevSnap] = await Promise.all([
       sundayRuns(db, week, dist).get(),
@@ -207,7 +225,7 @@
     const known = new Set(prevSnap ? prevSnap.docs.map((d) => d.id) : []);
     return withMoves(snap.docs.map((d) => ({ id: d.id, data: d.data() })), "time", true, uid, known)
       .slice(0, limit || TOP_N)
-      .map((r) => ({ place: r.place, name: r.data.name, time: r.data.time, boost: !!r.data.boost, me: r.me, move: r.move, isNew: r.isNew }));
+      .map((r) => ({ place: r.place, name: r.data.name, time: r.data.time, boost: !!r.data.boost, lvl: r.data.lvl || 0, me: r.me, move: r.move, isNew: r.isNew }));
   }
 
   // ---------- Трейл: турнірна таблиця trail/{7k|13k|26k}/runs/{uid}, найкращий час за весь час ----------
@@ -233,7 +251,7 @@
       // boost пишемо лише для забігів із бустом: звичайні результати сумісні й зі старими правилами
       const doc = { name, time: Math.round(run.time), stumbles: Math.floor(run.stumbles), dayStart, updatedAt: stamp };
       if (run.boost) doc.boost = true;
-      await ref.set(doc);
+      await setWithLevel(ref, doc);
     }
     const faster = await countOf(runs.where("time", "<", best));
     return { best, place: faster === null ? null : faster + 1 };
@@ -244,7 +262,7 @@
     const snap = await trailRuns(db, dist).get();
     return withMoves(snap.docs.map((d) => ({ id: d.id, data: d.data() })), "time", true, uid)
       .slice(0, limit || TOP_N)
-      .map((r) => ({ place: r.place, name: r.data.name, time: r.data.time, boost: !!r.data.boost, me: r.me, move: r.move, isNew: r.isNew }));
+      .map((r) => ({ place: r.place, name: r.data.name, time: r.data.time, boost: !!r.data.boost, lvl: r.data.lvl || 0, me: r.me, move: r.move, isNew: r.isNew }));
   }
 
   // ---------- Малюнок дня: draw/{titan|heart|star|rivne}/runs/{uid}, найкращий результат за малюнок ----------
@@ -307,6 +325,7 @@
     drawSubmit,
     drawTop,
     moveBadge,
+    lvlMark,
     withMoves,
   };
 })();

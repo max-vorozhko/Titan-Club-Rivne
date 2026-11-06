@@ -103,6 +103,7 @@
       this.sprinting = false;
       this.finished = false;
       this.boosted = false;
+      this.bonus = { speed: 1, drain: 1, lvl: 0 };
       this.camH = 0;
       this.draw();
     }
@@ -125,6 +126,7 @@
     start(distKm, boosted) {
       this.setup(distKm);
       this.boosted = !!boosted;
+      this.bonus = Profile.bonus(); // прокачка
       this.running = true;
       this.paused = false;
       this.last = performance.now();
@@ -197,12 +199,13 @@
       if (this.stumble > 0) mult *= STUMBLE;
       if (this.energy <= 0) mult *= EXHAUSTED;
       if (this.boosted) mult *= BOOST;
+      mult *= this.bonus.speed;
       p.speed += (SPEED * mult - p.speed) * Math.min(1, dt * 4);
       const before = this.track.profile.height(p.pos / PX_PER_KM);
       p.pos += p.speed * dt;
       this.climbed += Math.max(0, this.track.profile.height(p.pos / PX_PER_KM) - before);
 
-      this.energy -= dt * (0.4 + Math.max(g, 0) * 18 * (sprint ? 1.6 : 1) + (sprint ? 4 : 0));
+      this.energy -= dt * (0.4 + Math.max(g, 0) * 18 * (sprint ? 1.6 : 1) + (sprint ? 4 : 0)) * this.bonus.drain;
       if (g < -0.03 && !sprint) this.energy += dt * Math.min(2, -g * 12);
       this.energy = Math.max(0, Math.min(100, this.energy));
 
