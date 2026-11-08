@@ -15,6 +15,9 @@
     { id: "trail26", title: "Вертикаль", desc: "Фінішуй трейл на 26 км", item: ["shoes", "trail"] },
     { id: "top3week", title: "Подіум тижня", desc: "Потрап у топ-3 тижня в «Неділі»", item: ["shoes", "neon"] },
     { id: "top1", title: "Лідер", desc: "Стань першим у рейтингу тижня або в таблиці трейлу", item: ["hat", "wreath"] },
+    { id: "year100", title: "100 км за рік", desc: "Titan Premium: запиши 100 км у «Мій пробіг»", item: ["shirt", "bronze"] },
+    { id: "year500", title: "500 км за рік", desc: "Titan Premium: запиши 500 км у «Мій пробіг»", item: ["shirt", "silver"] },
+    { id: "year1000", title: "1000 км за рік", desc: "Titan Premium: запиши 1000 км у «Мій пробіг»", item: ["shirt", "diamond"] },
   ];
 
   function load() {
@@ -122,6 +125,20 @@
     const fresh = unlock(earned);
     save();
     announce(fresh);
+    return fresh;
+  }
+
+  /** Віхи пробігу за рік (Titan Premium): 100 / 500 / 1000 км відкривають форму */
+  function milestones(totalKm) {
+    const earned = [];
+    if (totalKm >= 100) earned.push("year100");
+    if (totalKm >= 500) earned.push("year500");
+    if (totalKm >= 1000) earned.push("year1000");
+    const fresh = unlock(earned);
+    if (fresh.length) {
+      save();
+      announce(fresh);
+    }
     return fresh;
   }
 
@@ -472,6 +489,7 @@
     isAvailable,
     itemName,
     record,
+    milestones,
     bestRuns,
     placed,
     toast,

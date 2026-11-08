@@ -17,8 +17,8 @@
   <meta name="apple-mobile-web-app-title" content="Titan Адмін">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=39">
-  <link rel="stylesheet" href="css/admin.css?v=39">
+  <link rel="stylesheet" href="css/style.css?v=41">
+  <link rel="stylesheet" href="css/admin.css?v=41">
 </head>
 <body class="admin-page">
   <header class="adm-head">
@@ -60,6 +60,7 @@
         <button class="seg__btn is-active" data-pane="runs" type="button"><i>✅</i>Неділі</button>
         <button class="seg__btn" data-pane="athletes" type="button"><i>👥</i>Атлети</button>
         <button class="seg__btn" data-pane="users" type="button"><i>🔑</i><span id="usr-tab">Входи</span></button>
+        <button class="seg__btn" data-pane="yearkm" type="button"><i>🏃</i>Пробіг</button>
         <button class="seg__btn" data-pane="codes" type="button" hidden id="adm-tab-codes"><i>🎟</i>Промокоди</button>
         <button class="seg__btn" data-pane="sheet" type="button"><i>⇅</i>Таблиця</button>
       </nav>
@@ -125,6 +126,16 @@
         </div>
       </section>
 
+      <!-- Пробіг за рік: цифри учасників Titan Premium, перевірка й виправлення -->
+      <section class="adm-pane" id="pane-yearkm" hidden>
+        <div class="adm-card">
+          <h2>Пробіг за <span id="yk-adm-year"></span> рік</h2>
+          <p class="muted">Учасники Titan Premium вносять пробіг самі. Тут ви бачите суми, підтверджуєте їх («✓») або виправляєте після розмови з учасником. Показано учасників клубу; хто не вносив, без цифри.</p>
+          <ul class="adm-yk" id="yk-adm-list"></ul>
+          <p class="adm-status" id="yk-adm-status"></p>
+        </div>
+      </section>
+
       <!-- Промокоди: лише власник -->
       <section class="adm-pane" id="pane-codes" hidden>
         <div class="adm-card">
@@ -167,9 +178,9 @@
 
   <div class="toast toast--global" id="global-toast"></div>
 
-  <script src="js/config.js?v=39"></script>
-  <script src="js/kyiv.js?v=39"></script>
-  <script src="js/club.js?v=39"></script>
-  <script src="js/admin.js?v=39"></script>
+  <script src="js/config.js?v=41"></script>
+  <script src="js/kyiv.js?v=41"></script>
+  <script src="js/club.js?v=41"></script>
+  <script src="js/admin.js?v=41"></script>
 </body>
 </html>

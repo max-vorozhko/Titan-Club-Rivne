@@ -11,6 +11,9 @@
       { id: "black", label: "Titan Black", color: "#111114", unlock: "game10" },
       { id: "kts", label: "Бірюзова КТС", color: "#3cc9b4", unlock: "sunday5" },
       { id: "gold", label: "Золота фінішерська", color: "#e0b02a", unlock: "game42" },
+      { id: "bronze", label: "Бронза 100 км", color: "#b0713b", unlock: "year100" },
+      { id: "silver", label: "Срібло 500 км", color: "#b9bec6", unlock: "year500" },
+      { id: "diamond", label: "Діамант 1000 км", color: "#4fd1ff", unlock: "year1000" },
     ],
     shorts: [
       { id: "ink", label: "Графіт", color: "#33333a" },
