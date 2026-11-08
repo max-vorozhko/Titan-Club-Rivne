@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Тести правил Firestore (firestore.rules) на емуляторі",
   "scripts": {
-    "test": "node rules.test.mjs && node daystart.test.mjs && node draw.test.mjs && node logins.test.mjs && node wallet.test.mjs && node training.test.mjs"
+    "test": "node rules.test.mjs && node daystart.test.mjs && node draw.test.mjs && node logins.test.mjs && node wallet.test.mjs && node training.test.mjs && node yearkm.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.0",

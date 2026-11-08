@@ -234,6 +234,62 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    // Пробіг з початку року для учасників Titan Premium: yearKm/{рік}/members/{athleteId}.
+    // Бачать і пишуть лише прив'язані учасники (свій документ) та адміни клубу. Дані вводить людина, тож адміни
+    // потім перевіряють їх вручну й ставлять «підтверджено» (verifiedKm / verifiedAt — змінюють лише адміни).
+    // Учасник може: задати базову цифру (base), додати пробіжку (+ до 100 км за раз, added) або скасувати
+    // останню. Загалом не більше 80 км × днів від початку року.
+    match /yearKm/{year}/members/{athleteId} {
+      allow read: if isClubAdmin() || isLinkedMember();
+      allow delete: if isClubAdmin();
+      allow create: if (isClubAdmin() && validKm(request.resource.data))
+        || (memberYear(year) && athleteId == memberAthlete() && validKm(request.resource.data)
+          && kmStart(request.resource.data, year, request.time));
+      allow update: if (isClubAdmin() && validKm(request.resource.data))
+        || (memberYear(year) && athleteId == memberAthlete() && validKm(request.resource.data)
+          && kmOp(resource.data, request.resource.data, changed(), year, request.time));
+    }
+
+    // Поточний або попередній рік за UTC (запас на межу року за київським часом)
+    function memberYear(year) {
+      return year.matches('^[0-9]{4}$')
+        && int(year) <= request.time.year() && int(year) >= request.time.year() - 1;
+    }
+
+    function validKm(d) {
+      return d.keys().hasOnly(['base', 'added', 'total', 'log', 'verifiedKm', 'verifiedAt', 'updatedAt'])
+        && d.base is number && d.base >= 0 && d.base <= 30000
+        && d.added is number && d.added >= 0 && d.added <= 30000
+        && d.total is number && math.abs(d.total - (d.base + d.added)) < 0.001
+        && d.log is list && d.log.size() <= 30
+        && (!('verifiedKm' in d) || d.verifiedKm is number)
+        && (!('verifiedAt' in d) || d.verifiedAt is timestamp)
+        && d.updatedAt == request.time;
+    }
+
+    // Не більше 80 км на день з початку року
+    function kmCapOk(n, year, t) {
+      return n.total <= 80 * ((t - timestamp.date(int(year), 1, 1)).seconds() / 86400.0 + 1);
+    }
+
+    function kmStart(n, year, t) {
+      return n.keys().hasOnly(['base', 'added', 'total', 'log', 'updatedAt'])
+        && n.added == 0 && n.log.size() == 0 && kmCapOk(n, year, t);
+    }
+
+    function kmOp(r, n, ch, year, t) {
+      return
+          // змінити базову цифру («пробіг з початку року»)
+          (ch.hasOnly(['base', 'total', 'updatedAt']) && kmCapOk(n, year, t))
+          // додати пробіжку (до 100 км за раз)
+          || (ch.hasOnly(['added', 'total', 'log', 'updatedAt'])
+            && n.added > r.added && n.added - r.added <= 100
+            && n.log.size() >= 1 && kmCapOk(n, year, t))
+          // скасувати останнє додавання
+          || (ch.hasOnly(['added', 'total', 'log', 'updatedAt'])
+            && n.added < r.added && n.added >= 0 && n.log.size() < r.log.size());
+    }
+
     // Одноразові промокоди codes/{КОД}. Звичайні гравці не бачать і не перебирають коди:
     // можуть лише «погасити» конкретний код, який знають, і лише разом із нарахуванням буста собі.
     match /codes/{code} {

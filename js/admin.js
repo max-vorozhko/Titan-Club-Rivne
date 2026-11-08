@@ -421,6 +421,68 @@
     }
   }
 
+  // ---------- Пробіг за рік (Titan Premium) ----------
+
+  const ykYear = () => Number(Kyiv.today().slice(0, 4));
+  const ykCol = () => db.collection("yearKm").doc(String(ykYear())).collection("members");
+  let ykDocs = new Map();
+  const kmFmt = (n) => (Math.round(n * 10) / 10).toLocaleString("uk-UA", { maximumFractionDigits: 1 });
+
+  async function loadYearKm() {
+    $("yk-adm-year").textContent = ykYear();
+    try {
+      const snap = await ykCol().get();
+      ykDocs = new Map(snap.docs.map((d) => [d.id, d.data()]));
+      renderYearKm();
+    } catch (e) {
+      status("yk-adm-status", "Не вдалося завантажити 😕", true);
+    }
+  }
+
+  function renderYearKm() {
+    const rows = athletes
+      .filter((a) => a.active || ykDocs.has(a.id))
+      .map((a) => ({ a, d: ykDocs.get(a.id) }))
+      .sort((x, y) => (y.d ? y.d.total : -1) - (x.d ? x.d.total : -1));
+    $("yk-adm-list").innerHTML = rows
+      .map(({ a, d }) => {
+        if (!d) return `<li class="adm-athlete is-inactive"><div><b>${escapeHtml(a.name)}</b><small>не вносив(ла)</small></div><div class="adm-athlete__acts"><button class="link" data-yk-set="${a.id}" type="button">ввести</button></div></li>`;
+        const ok = d.verifiedKm !== undefined && Math.abs(d.verifiedKm - d.total) < 0.05;
+        const when = d.updatedAt && d.updatedAt.toDate ? d.updatedAt.toDate().toLocaleDateString("uk-UA", { day: "numeric", month: "short" }) : "";
+        const state = ok ? "✅ підтверджено" : d.verifiedKm !== undefined ? `⏳ підтверджено ${kmFmt(d.verifiedKm)} км, змінено` : "не перевірено";
+        return `<li class="adm-athlete">
+          <div><b>${escapeHtml(a.name)}</b><small>${kmFmt(d.total)} км (база ${kmFmt(d.base)} + додано ${kmFmt(d.added)}) · ${state}${when ? " · оновлено " + when : ""}</small></div>
+          <div class="adm-athlete__acts">${ok ? "" : `<button class="link" data-yk-ok="${a.id}" type="button">✓ підтвердити</button>`}<button class="link" data-yk-set="${a.id}" type="button">виправити</button></div>
+        </li>`;
+      })
+      .join("");
+  }
+
+  $("yk-adm-list").addEventListener("click", async (e) => {
+    const ok = e.target.closest("[data-yk-ok]");
+    const set = e.target.closest("[data-yk-set]");
+    try {
+      if (ok) {
+        const id = ok.dataset.ykOk;
+        const d = ykDocs.get(id);
+        await ykCol().doc(id).update({ verifiedKm: d.total, verifiedAt: FV.serverTimestamp(), updatedAt: FV.serverTimestamp() });
+        status("yk-adm-status", "✓ Підтверджено");
+      } else if (set) {
+        const id = set.dataset.ykSet;
+        const d = ykDocs.get(id);
+        const raw = window.prompt("Пробіг з початку року, км (замінить усі додавання й зніме підтвердження):", d ? String(d.total) : "");
+        if (raw === null) return;
+        const v = Math.round(Number(raw.replace(",", ".")) * 10) / 10;
+        if (!(v >= 0) || v > 30000) return status("yk-adm-status", "Введи цифру в кілометрах", true);
+        await ykCol().doc(id).set({ base: v, added: 0, total: v, log: [], updatedAt: FV.serverTimestamp() });
+        status("yk-adm-status", "✓ Збережено");
+      } else return;
+      loadYearKm();
+    } catch (err) {
+      status("yk-adm-status", "Не вдалося зберегти 😕", true);
+    }
+  });
+
   // ---------- Промокоди (лише власник) ----------
 
   function newCode() {
@@ -645,7 +707,8 @@
     const btn = e.target.closest("[data-pane]");
     if (!btn) return;
     $("adm-tabs").querySelectorAll(".seg__btn").forEach((b) => b.classList.toggle("is-active", b === btn));
-    ["runs", "athletes", "users", "codes", "sheet"].forEach((p) => ($("pane-" + p).hidden = p !== btn.dataset.pane));
+    ["runs", "athletes", "users", "yearkm", "codes", "sheet"].forEach((p) => ($("pane-" + p).hidden = p !== btn.dataset.pane));
+    if (btn.dataset.pane === "yearkm") loadYearKm();
     if (btn.dataset.pane === "codes") loadCodes();
     if (btn.dataset.pane === "users") loadUsers();
   });

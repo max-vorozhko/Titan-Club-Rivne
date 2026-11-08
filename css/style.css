@@ -323,6 +323,20 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .boost-toggle small { font-weight: 600; color: var(--muted); }
 .boost-mark { font-size: 14px; }
+.yearkm { margin: 14px 0; padding: 14px; border-radius: var(--radius); background: var(--surface); border: 2px solid var(--brand); }
+.yearkm__title { margin: 0 0 4px; font: 700 20px var(--font-display); text-transform: uppercase; letter-spacing: .5px; }
+.yearkm__total { margin: 0; font: 700 14px var(--font); }
+.yearkm__total b { font: 700 40px var(--font-display); color: var(--brand); }
+.yearkm__parts { margin: 0 0 4px; font-size: 13px; }
+.yearkm__verified { margin: 0 0 10px; font-weight: 600; font-size: 13px; }
+.yearkm__form { margin: 10px 0; }
+.yearkm__form label { display: block; margin-bottom: 4px; font-weight: 700; font-size: 14px; }
+.yearkm__form .lb-form { width: 100%; }
+.yearkm__log { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.yearkm__log li { display: flex; justify-content: space-between; }
+.yearkm__log small { color: var(--muted); }
+.club-year { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 2px dashed var(--surface-2); }
+.club-year__title { margin: 0 0 4px; font: 700 20px var(--font-display); text-transform: uppercase; letter-spacing: .5px; }
 .lvl-mark { display: inline-block; padding: 0 6px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 700; vertical-align: 1px; }
 
 /* Прокачка */

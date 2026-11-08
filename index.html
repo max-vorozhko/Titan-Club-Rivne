@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=39">
+  <link rel="stylesheet" href="css/style.css?v=41">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -399,6 +399,7 @@
     <!-- КЛУБ: відвідуваність недільних пробіжок (дані з адмінки, лише вигадані персонажі) -->
     <section id="tab-club" class="tab">
       <div class="panel club">
+        <div class="club-year" id="club-year" hidden></div>
         <h2>Клуб: неділі</h2>
         <p class="muted small-left" id="club-lead">Відвідуваність недільних пробіжок Titan Club Rivne. Щоб зберегти приватність, імена замінені на вигаданих персонажів.</p>
         <div class="club__body" id="club-body">
@@ -422,6 +423,31 @@
         <div class="account" id="account" hidden>
           <div class="account__body" id="account-body"></div>
           <div class="account__btn" id="account-btn"></div>
+        </div>
+
+        <!-- Пробіг з початку року: лише для учасників Titan Premium (прив'язаних адміном) -->
+        <div class="yearkm" id="yearkm" hidden>
+          <h3 class="yearkm__title">🏃 Мій пробіг у <span id="yk-year"></span> році</h3>
+          <p class="yearkm__total"><b id="yk-total">0</b> км</p>
+          <p class="yearkm__parts muted" id="yk-parts"></p>
+          <p class="yearkm__verified" id="yk-verified"></p>
+          <form class="yearkm__form" id="yk-base-form">
+            <label for="yk-base">Пробіг з початку року (твоя цифра зараз)</label>
+            <div class="lb-form">
+              <input class="lb-form__input" id="yk-base" inputmode="decimal" placeholder="напр. 482,5" autocomplete="off">
+              <button class="btn btn--small" type="submit">Зберегти</button>
+            </div>
+          </form>
+          <form class="yearkm__form" id="yk-add-form">
+            <label for="yk-add">Додати пробіжку</label>
+            <div class="lb-form">
+              <input class="lb-form__input" id="yk-add" inputmode="decimal" placeholder="+ км, напр. 10,5" autocomplete="off">
+              <button class="btn btn--small" type="submit">Додати</button>
+            </div>
+          </form>
+          <ul class="yearkm__log" id="yk-log"></ul>
+          <button class="link" id="yk-undo" type="button" hidden>скасувати останнє додавання</button>
+          <p class="muted small-left">Ці дані бачать лише учасники Titan Premium. Адміни клубу перевіряють їх вручну й можуть попросити підтвердження.</p>
         </div>
 
         <div class="stats" id="profile-stats"></div>
@@ -551,26 +577,27 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=39"></script>
-  <script src="js/kyiv.js?v=39"></script>
-  <script src="js/analytics.js?v=39"></script>
-  <script src="js/errors.js?v=39"></script>
-  <script src="js/leaderboard.js?v=39"></script>
-  <script src="js/share.js?v=39"></script>
-  <script src="js/avatar.js?v=39"></script>
-  <script src="js/profile.js?v=39"></script>
-  <script src="js/rewards.js?v=39"></script>
-  <script src="js/game.js?v=39"></script>
-  <script src="js/app.js?v=39"></script>
-  <script src="js/sunday.js?v=39"></script>
-  <script src="js/sunday-ui.js?v=39"></script>
-  <script src="js/trail.js?v=39"></script>
-  <script src="js/trail-ui.js?v=39"></script>
-  <script src="js/draw.js?v=39"></script>
-  <script src="js/profile-ui.js?v=39"></script>
-  <script src="js/account.js?v=39"></script>
-  <script src="js/club.js?v=39"></script>
-  <script src="js/club-ui.js?v=39"></script>
-  <script src="js/pwa.js?v=39"></script>
+  <script src="js/config.js?v=41"></script>
+  <script src="js/kyiv.js?v=41"></script>
+  <script src="js/analytics.js?v=41"></script>
+  <script src="js/errors.js?v=41"></script>
+  <script src="js/leaderboard.js?v=41"></script>
+  <script src="js/share.js?v=41"></script>
+  <script src="js/avatar.js?v=41"></script>
+  <script src="js/profile.js?v=41"></script>
+  <script src="js/rewards.js?v=41"></script>
+  <script src="js/game.js?v=41"></script>
+  <script src="js/app.js?v=41"></script>
+  <script src="js/sunday.js?v=41"></script>
+  <script src="js/sunday-ui.js?v=41"></script>
+  <script src="js/trail.js?v=41"></script>
+  <script src="js/trail-ui.js?v=41"></script>
+  <script src="js/draw.js?v=41"></script>
+  <script src="js/profile-ui.js?v=41"></script>
+  <script src="js/account.js?v=41"></script>
+  <script src="js/yearkm.js?v=41"></script>
+  <script src="js/club.js?v=41"></script>
+  <script src="js/club-ui.js?v=41"></script>
+  <script src="js/pwa.js?v=41"></script>
 </body>
 </html>

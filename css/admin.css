@@ -95,3 +95,8 @@ body.admin-page { display: block; min-height: 100%; }
 .adm-user__select { flex: 1 1 180px; min-width: 0; padding: 9px 10px; border-radius: 10px; border: 2px solid var(--ink); font: 600 14px var(--font); background: #fff; color: var(--ink); }
 .adm-user__linked { font-weight: 700; color: #1b7a3f; }
 #usr-search { width: 100%; margin-top: 8px; }
+
+/* Пробіг за рік */
+.adm-yk { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.adm-yk .adm-athlete { flex-wrap: wrap; }
+.adm-yk .adm-athlete > div:first-child { flex: 1 1 200px; min-width: 0; }
