@@ -1,7 +1,7 @@
 // Сервіс-воркер Titan Run: швидкий запуск з іконки на екрані й робота без інтернету (гра без рейтингів).
 // Сторінку (index.html) беремо з мережі, а якщо її немає — з кешу; файли з ?v=N — з кешу (вони не змінюються).
 // Firebase, Google, статистика й адмінка йдуть повз кеш.
-const CACHE = "titan-run-v41";
+const CACHE = "titan-run-v42";
 const CORE = ["./", "index.html", "manifest.webmanifest", "assets/logo.png", "assets/icons/icon-192.png", "assets/icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
