@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
+  <!-- Додаток Android відкриває цю адресу в браузері; ?open=game перекидає звідти на гру (вхід через Google працює лише в браузері) -->
+  <script>if (/[?&]open=game(&|$)/.test(location.search)) location.replace(location.pathname.replace(/admin\.html$/, ""));</script>
   <title>Адмінка Titan Club</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
   <!-- Адмінка як окремий додаток на екрані телефона (PWA) -->
@@ -15,8 +17,8 @@
   <meta name="apple-mobile-web-app-title" content="Titan Адмін">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=38">
-  <link rel="stylesheet" href="css/admin.css?v=38">
+  <link rel="stylesheet" href="css/style.css?v=39">
+  <link rel="stylesheet" href="css/admin.css?v=39">
 </head>
 <body class="admin-page">
   <header class="adm-head">
@@ -165,9 +167,9 @@
 
   <div class="toast toast--global" id="global-toast"></div>
 
-  <script src="js/config.js?v=38"></script>
-  <script src="js/kyiv.js?v=38"></script>
-  <script src="js/club.js?v=38"></script>
-  <script src="js/admin.js?v=38"></script>
+  <script src="js/config.js?v=39"></script>
+  <script src="js/kyiv.js?v=39"></script>
+  <script src="js/club.js?v=39"></script>
+  <script src="js/admin.js?v=39"></script>
 </body>
 </html>
