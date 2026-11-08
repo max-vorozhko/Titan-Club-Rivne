@@ -66,12 +66,13 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .game canvas { display: block; width: 100%; height: 100%; }
 
-/* Швидкі торкання (стрибок, подвійний стрибок) не мають виділяти текст і викликати лупу/меню на iPhone та Android:
-   Safari ігнорує user-select без префікса, тому дублюємо його разом із -webkit-touch-callout. Поля вводу лишаються. */
-.game, .game *, .panel.draw, .panel.draw *, button, .tabs__btn, .seg__btn {
+/* Швидкі торкання (стрибок, подвійний стрибок) не мають виділяти текст і викликати лупу/меню на iPhone та Android,
+   зокрема й у нижньому рядку сайту, куди потрапляють «промахи» повз гру. Safari ігнорує user-select без префікса,
+   тому дублюємо його разом із -webkit-touch-callout. Поля вводу й адмінка (копіювання промокодів) лишаються. */
+body:not(.admin-page), body:not(.admin-page) * {
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
-.game input, .panel.draw input, input, textarea {
+body:not(.admin-page) input, body:not(.admin-page) textarea, body.admin-page, body.admin-page * {
   -webkit-user-select: text; user-select: text;
 }
 
