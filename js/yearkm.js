@@ -44,7 +44,7 @@
     const next = change(snap.exists ? { ...snap.data() } : null);
     next.updatedAt = stampNow();
     await r.set(next);
-    mine = (await r.get()).data();
+    mine = next; // без повторного читання: на мобільному кожен запит додає секунди
     return mine;
   }
 
@@ -118,45 +118,82 @@
 
   const errText = (e) => (e && /permission/i.test(String(e.code || e.message)) ? "Не вдалося: перевір цифру (занадто велика для цієї дати?)" : "Не вдалося зберегти 😕");
 
-  $("yk-base-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const km = parseKm($("yk-base").value);
-    if (!(km >= 0) || km > 30000) return toast("Введи цифру в кілометрах, наприклад 482,5");
+  // Відгук на дію: кнопка блокується з «Зберігаю…» (повторні тапи ігноруються), після успіху — зелений рядок
+  // просто в блоці, підсвічене число й «✓» на кнопці; помилка — червоний рядок.
+  let busy = false;
+  let statusTimer;
+
+  function showStatus(text, bad) {
+    const el = $("yk-status");
+    el.textContent = text;
+    el.classList.toggle("is-bad", !!bad);
+    el.hidden = !text;
+    clearTimeout(statusTimer);
+    if (text) statusTimer = setTimeout(() => (el.hidden = true), 6000);
+  }
+
+  function flashTotal() {
+    const el = $("yk-total");
+    el.classList.remove("is-flash");
+    void el.offsetWidth; // перезапуск анімації
+    el.classList.add("is-flash");
+  }
+
+  async function act(button, work, okText, doneLabel) {
+    if (busy) return;
+    busy = true;
+    const label = button.textContent;
+    button.disabled = true;
+    button.textContent = "Зберігаю…";
+    showStatus("");
     try {
-      await saveBase(km);
-      toast("✓ Збережено");
+      await work();
       renderCabinet();
       checkMilestones();
+      flashTotal();
+      showStatus(okText());
+      toast("✓ Збережено");
+      button.textContent = doneLabel || "✓ Готово";
+      setTimeout(() => {
+        button.textContent = label;
+        button.disabled = false;
+      }, 1400);
     } catch (err) {
-      toast(errText(err));
+      showStatus(errText(err), true);
+      button.textContent = label;
+      button.disabled = false;
+    } finally {
+      busy = false;
     }
+  }
+
+  $("yk-base-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const km = parseKm($("yk-base").value);
+    if (!(km >= 0) || km > 30000) return showStatus("Введи цифру в кілометрах, наприклад 482,5", true);
+    act(e.submitter || e.target.querySelector("button"), () => saveBase(km), () => `✓ Збережено: з початку року ${fmt(km)} км. Разом ${fmt(mine.total)} км.`, "✓ Збережено");
   });
 
-  $("yk-add-form").addEventListener("submit", async (e) => {
+  $("yk-add-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const input = $("yk-add");
     const km = parseKm(input.value);
-    if (!(km > 0)) return toast("Введи, скільки кілометрів додати");
-    if (km > MAX_ADD) return toast(`За один раз можна додати до ${MAX_ADD} км`);
-    try {
-      await addKm(km);
-      input.value = "";
-      toast(`✓ +${fmt(km)} км додано`);
-      renderCabinet();
-      checkMilestones();
-    } catch (err) {
-      toast(errText(err));
-    }
+    if (!(km > 0)) return showStatus("Введи, скільки кілометрів додати", true);
+    if (km > MAX_ADD) return showStatus(`За один раз можна додати до ${MAX_ADD} км`, true);
+    act(
+      e.submitter || e.target.querySelector("button"),
+      async () => {
+        await addKm(km);
+        input.value = "";
+      },
+      () => `✓ Додано +${fmt(km)} км. Тепер у тебе ${fmt(mine.total)} км.`,
+      "✓ Додано"
+    );
   });
 
-  $("yk-undo").addEventListener("click", async () => {
-    try {
-      await undoLast();
-      toast("Останнє додавання скасовано");
-      renderCabinet();
-    } catch (err) {
-      toast(errText(err));
-    }
+  $("yk-undo").addEventListener("click", (e) => {
+    const km = mine && mine.log.length ? mine.log[mine.log.length - 1].k : 0;
+    act(e.currentTarget, () => undoLast(), () => `Скасовано +${fmt(km)} км. Тепер у тебе ${fmt(mine.total)} км.`, "✓ Скасовано");
   });
 
   // ---------- Рейтинг Titan Premium у вкладці «Клуб» ----------
