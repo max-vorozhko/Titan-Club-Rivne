@@ -24,7 +24,8 @@
     route: null, // { plain, outlined, thumb, ratio }
     preset: "collective",
     fx: 50,
-    fy: 30,
+    fy: 60,
+    zoom: 100,
     cropTop: 33,
     cropBottom: 22,
   };
@@ -300,8 +301,9 @@
     return px;
   }
 
-  function cover(g, img, x, y, w, h, fx, fy) {
-    const s = Math.max(w / img.width, h / img.height);
+  // fx/fy — зсув у відсотках (0–100), z — додатковий масштаб (1 = лише «заповнити»); без масштабу фото тієї ж пропорції зсувати нікуди
+  function cover(g, img, x, y, w, h, fx, fy, z) {
+    const s = Math.max(w / img.width, h / img.height) * (z || 1);
     const dw = img.width * s;
     const dh = img.height * s;
     const dx = x - (dw - w) * (fx / 100);
@@ -451,6 +453,7 @@
     const v = values();
     const photo = state.photo || placeholderPhoto();
     const { fx, fy } = state;
+    const zm = state.zoom / 100;
     const lines = headLines(v.headline);
     const tag = "#TitanClubRivne";
 
@@ -471,7 +474,7 @@
     };
 
     if (presetId === "collective") {
-      withFilter(g, "contrast(1.1) saturate(1.25) brightness(1.03)", () => cover(g, photo, 0, 0, w, h, fx, fy));
+      withFilter(g, "contrast(1.1) saturate(1.25) brightness(1.03)", () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
       g.save();
       g.globalCompositeOperation = "soft-light";
       const rg = g.createRadialGradient(w / 2, h * 0.4, h * 0.2, w / 2, h * 0.4, h * 0.85);
@@ -497,7 +500,7 @@
       statBlock(48 + 280, h - 62, "темп /км", v.pace, 58);
       mapCard(g, w - 48 - 320, h - 46 - 340, 320, 340, 30, "#fff");
     } else if (presetId === "typo") {
-      withFilter(g, "grayscale(.35) contrast(1.15) saturate(1.1)", () => cover(g, photo, 0, 0, w, h, fx, fy));
+      withFilter(g, "grayscale(.35) contrast(1.15) saturate(1.1)", () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
       g.save();
       g.globalCompositeOperation = "multiply";
       g.fillStyle = linear(g, 0, 0, 0, h, [[0, "rgba(248,90,10,.55)"], [0.62, "rgba(51,51,58,0)"], [1, "rgba(51,51,58,0)"]]);
@@ -528,7 +531,7 @@
         g.restore();
       }
     } else if (presetId === "card") {
-      withFilter(g, "contrast(1.06) saturate(1.15)", () => cover(g, photo, 0, 0, w, h, fx, fy));
+      withFilter(g, "contrast(1.06) saturate(1.15)", () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
       logoBadge(g, 36, 36, 160);
       g.save();
       g.font = fontOswald(28);
@@ -589,7 +592,7 @@
       g.save();
       roundRect(g, 98, 668, w - 196, 624, 38);
       g.clip();
-      withFilter(g, "contrast(1.08) saturate(1.2)", () => cover(g, photo, 98, 668, w - 196, 624, fx, 62));
+      withFilter(g, "contrast(1.08) saturate(1.2)", () => cover(g, photo, 98, 668, w - 196, 624, fx, fy, zm));
       g.restore();
       const mapW = state.route ? 250 : 0;
       bigKm(90, 1530, 190, 60, w - 180 - 330);
@@ -599,7 +602,7 @@
       brandLine(g, mapW ? 350 : 90, h - 190, 36, 3);
       text(g, tag, mapW ? 350 : 90, h - 140, { font: fontOswald(36), color: ORANGE, ls: 3, upper: true });
     } else if (presetId === "sky") {
-      withFilter(g, "contrast(1.08) saturate(1.1)", () => cover(g, photo, 0, 0, w, h, fx, fy));
+      withFilter(g, "contrast(1.08) saturate(1.1)", () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
       g.fillStyle = linear(g, 0, 0, 0, h, [[0, "rgba(51,51,58,0)"], [0.4, "rgba(51,51,58,0)"], [0.76, "rgba(51,51,58,.75)"], [1, "rgba(51,51,58,.97)"]]);
       g.fillRect(0, 0, w, h);
       if (state.route) drawRoute(g, state.route.outlined, 560, 90, 430);
@@ -623,7 +626,7 @@
       g.save();
       roundRect(g, 36, 36, w - 72, h - 36 - 330, 30);
       g.clip();
-      withFilter(g, "contrast(1.08) saturate(1.1)", () => cover(g, photo, 36, 36, w - 72, h - 366, fx, fy));
+      withFilter(g, "contrast(1.08) saturate(1.1)", () => cover(g, photo, 36, 36, w - 72, h - 366, fx, fy, zm));
       g.fillStyle = linear(g, 0, h - 330, 0, h - 330 - 520, [[0, "rgba(51,51,58,.6)"], [1, "rgba(51,51,58,0)"]]);
       g.fillRect(36, h - 330 - 520, w - 72, 520);
       if (state.route) drawRoute(g, state.route.outlined, 620, 130, 330);
@@ -673,7 +676,7 @@
       g.save();
       roundRect(g, 68, 888, w - 136, 544, 30);
       g.clip();
-      withFilter(g, "contrast(1.08) saturate(1.15)", () => cover(g, photo, 68, 888, w - 136, 544, fx, 58));
+      withFilter(g, "contrast(1.08) saturate(1.15)", () => cover(g, photo, 68, 888, w - 136, 544, fx, fy, zm));
       g.restore();
       const px = bigKm(62, 1700, 220, 64, 560);
       statBlock(w - 62 - 280, 1630, "час", v.time, 78);
@@ -798,7 +801,7 @@
   });
 
   ["ph-km", "ph-time", "ph-pace", "ph-headline", "ph-sub"].forEach((id) => $(id).addEventListener("input", schedule));
-  [["ph-fx", "fx"], ["ph-fy", "fy"], ["ph-ct", "cropTop"], ["ph-cb", "cropBottom"]].forEach(([id, key]) =>
+  [["ph-fx", "fx"], ["ph-fy", "fy"], ["ph-zoom", "zoom"], ["ph-ct", "cropTop"], ["ph-cb", "cropBottom"]].forEach(([id, key]) =>
     $(id).addEventListener("input", (e) => {
       state[key] = Number(e.target.value);
       schedule();
