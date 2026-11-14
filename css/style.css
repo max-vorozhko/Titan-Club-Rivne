@@ -339,6 +339,11 @@ body:not(.admin-page) input, body:not(.admin-page) textarea, body.admin-page, bo
 .yearkm__total b { font: 700 40px var(--font-display); color: var(--brand); }
 .yearkm__parts { margin: 0 0 4px; font-size: 13px; }
 .yearkm__verified { margin: 0 0 10px; font-weight: 600; font-size: 13px; }
+.yearkm__status { margin: 8px 0; padding: 8px 12px; border-radius: 12px; background: #e8f6ec; color: #1b7a3f; font-weight: 700; font-size: 14px; }
+.yearkm__status.is-bad { background: #fdecea; color: #c62828; }
+.yearkm__total b.is-flash { animation: yk-flash .9s ease-out; }
+@keyframes yk-flash { 0% { transform: scale(1.35); color: #1b7a3f; } 100% { transform: scale(1); } }
+.yearkm__form button:disabled { opacity: .75; }
 .yearkm__form { margin: 10px 0; }
 .yearkm__form label { display: block; margin-bottom: 4px; font-weight: 700; font-size: 14px; }
 .yearkm__form .lb-form { width: 100%; }
