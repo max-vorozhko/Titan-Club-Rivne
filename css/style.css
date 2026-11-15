@@ -618,3 +618,10 @@ body.is-home .topbar { display: none; }
 .ph-tune label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .ph-tune input[type=range] { width: 100%; accent-color: var(--brand); }
 .ph-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 4px; }
+
+.ph-format { display: flex; gap: 6px; margin: 6px 0 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); }
+.ph-format button { flex: 1; border: 0; background: none; padding: 10px 8px; border-radius: 999px; font: 700 15px var(--font-display); text-transform: uppercase; letter-spacing: 1px; color: var(--ink); cursor: pointer; }
+.ph-format button small { font-family: var(--font); font-weight: 600; opacity: .7; letter-spacing: 0; }
+.ph-format button.is-active { background: var(--brand); color: #fff; }
+.ph-format button.is-active small { color: #fff; opacity: .9; }
+.ph-fields .lb-form__input::placeholder { color: #b4b4bb; font-weight: 500; }
