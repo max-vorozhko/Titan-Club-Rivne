@@ -15,9 +15,9 @@
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;400;500;600;700;800;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=46">
+  <link rel="stylesheet" href="css/style.css?v=47">
 </head>
 <body class="is-home">
   <header class="topbar">
@@ -390,7 +390,7 @@
 
         <div class="ph-step">
           <b>2. Скріншот зі Strava чи годинника <small>(необов'язково)</small></b>
-          <p class="muted small-left">Я виділю зі скріншота оранжевий контур твого маршруту й покажу його на фото.</p>
+          <p class="muted small-left">Я виділю зі скріншота контур твого маршруту й <b>зчитаю цифри</b> (км, час, темп). Перевір їх нижче.</p>
           <label class="btn btn--small ph-file">🗺️ Обрати скріншот<input type="file" id="ph-shot" accept="image/*" hidden></label>
           <p class="ph-status" id="ph-shot-status" hidden></p>
           <div class="ph-pick" id="ph-pick" hidden><canvas id="ph-pick-canvas"></canvas></div>
@@ -399,19 +399,23 @@
         <div class="ph-step">
           <b>3. Цифри</b>
           <div class="ph-fields">
-            <label>Км<input class="lb-form__input" id="ph-km" inputmode="decimal" placeholder="13,01" value="13,01" autocomplete="off"></label>
-            <label>Час<input class="lb-form__input" id="ph-time" placeholder="1:15:20" value="1:15" autocomplete="off"></label>
-            <label>Темп /км<input class="lb-form__input" id="ph-pace" placeholder="авто" value="5:49" autocomplete="off"></label>
+            <label>Км<input class="lb-form__input" id="ph-km" inputmode="decimal" placeholder="напр. 10,5" autocomplete="off"></label>
+            <label>Час<input class="lb-form__input" id="ph-time" placeholder="напр. 58:36" autocomplete="off"></label>
+            <label>Темп /км<input class="lb-form__input" id="ph-pace" placeholder="авто" autocomplete="off"></label>
           </div>
           <div class="ph-fields ph-fields--wide">
             <label>Заголовок<input class="lb-form__input" id="ph-headline" maxlength="30" value="Ми пробігли" autocomplete="off"></label>
-            <label>Підпис (дата, місце)<input class="lb-form__input" id="ph-sub" maxlength="40" value="Ранкова пробіжка · 7:06" autocomplete="off"></label>
+            <label>Підпис (необов'язково)<input class="lb-form__input" id="ph-sub" maxlength="40" placeholder="Ранкова пробіжка" autocomplete="off"></label>
           </div>
-          <p class="muted small-left">Час: <b>1:15:20</b> (год:хв:с) або <b>58:36</b> (хв:с). Порожній темп порахую сам.</p>
+          <p class="muted small-left">Час: <b>1:15:20</b> (год:хв:с) або <b>58:36</b> (хв:с). Порожній темп порахую сам. Якщо цифри не зчиталися, введи їх руками.</p>
         </div>
 
         <div class="ph-step">
-          <b>4. Стиль</b>
+          <b>4. Формат і стиль</b>
+          <div class="ph-format" id="ph-format">
+            <button type="button" class="is-active" data-fmt="post">Пост <small>4:5</small></button>
+            <button type="button" data-fmt="story">Сторіс <small>9:16</small></button>
+          </div>
           <div class="ph-presets" id="ph-presets"></div>
         </div>
 
@@ -423,11 +427,7 @@
         <div class="ph-tune">
           <label>Фото: масштаб (збільш, щоб зсувати)<input type="range" id="ph-zoom" min="100" max="250" value="100"></label>
           <label>Фото: ліво ↔ право<input type="range" id="ph-fx" min="0" max="100" value="50"></label>
-          <label>Фото: верх ↕ низ<input type="range" id="ph-fy" min="0" max="100" value="60"></label>
-          <div id="ph-crop" hidden>
-            <label>Скріншот: обрізати зверху<input type="range" id="ph-ct" min="0" max="60" value="33"></label>
-            <label>Скріншот: обрізати знизу<input type="range" id="ph-cb" min="0" max="50" value="22"></label>
-          </div>
+          <label>Фото: верх ↕ низ<input type="range" id="ph-fy" min="0" max="100" value="20"></label>
         </div>
 
         <div class="ph-actions">
@@ -646,28 +646,28 @@
     <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
   </footer>
 
-  <script src="js/config.js?v=46"></script>
-  <script src="js/kyiv.js?v=46"></script>
-  <script src="js/analytics.js?v=46"></script>
-  <script src="js/errors.js?v=46"></script>
-  <script src="js/leaderboard.js?v=46"></script>
-  <script src="js/share.js?v=46"></script>
-  <script src="js/avatar.js?v=46"></script>
-  <script src="js/profile.js?v=46"></script>
-  <script src="js/rewards.js?v=46"></script>
-  <script src="js/game.js?v=46"></script>
-  <script src="js/app.js?v=46"></script>
-  <script src="js/sunday.js?v=46"></script>
-  <script src="js/sunday-ui.js?v=46"></script>
-  <script src="js/trail.js?v=46"></script>
-  <script src="js/trail-ui.js?v=46"></script>
-  <script src="js/draw.js?v=46"></script>
-  <script src="js/profile-ui.js?v=46"></script>
-  <script src="js/account.js?v=46"></script>
-  <script src="js/yearkm.js?v=46"></script>
-  <script src="js/photo.js?v=46"></script>
-  <script src="js/club.js?v=46"></script>
-  <script src="js/club-ui.js?v=46"></script>
-  <script src="js/pwa.js?v=46"></script>
+  <script src="js/config.js?v=47"></script>
+  <script src="js/kyiv.js?v=47"></script>
+  <script src="js/analytics.js?v=47"></script>
+  <script src="js/errors.js?v=47"></script>
+  <script src="js/leaderboard.js?v=47"></script>
+  <script src="js/share.js?v=47"></script>
+  <script src="js/avatar.js?v=47"></script>
+  <script src="js/profile.js?v=47"></script>
+  <script src="js/rewards.js?v=47"></script>
+  <script src="js/game.js?v=47"></script>
+  <script src="js/app.js?v=47"></script>
+  <script src="js/sunday.js?v=47"></script>
+  <script src="js/sunday-ui.js?v=47"></script>
+  <script src="js/trail.js?v=47"></script>
+  <script src="js/trail-ui.js?v=47"></script>
+  <script src="js/draw.js?v=47"></script>
+  <script src="js/profile-ui.js?v=47"></script>
+  <script src="js/account.js?v=47"></script>
+  <script src="js/yearkm.js?v=47"></script>
+  <script src="js/photo.js?v=47"></script>
+  <script src="js/club.js?v=47"></script>
+  <script src="js/club-ui.js?v=47"></script>
+  <script src="js/pwa.js?v=47"></script>
 </body>
 </html>

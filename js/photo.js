@@ -1,37 +1,28 @@
-// «Фото з пробіжки»: користувач вантажить колективне фото й (за бажанням) скріншот зі Strava/Garmin, вводить цифри,
-// гра виділяє зі скріншота оранжевий контур маршруту й малює брендований пост (7 пресетів). Усе в браузері, без сервера.
+// «Фото з пробіжки»: фото + скріншот зі Strava/Garmin → пост або сторіс у фірмовому мінімалістичному стилі.
+// Усе в браузері: контур маршруту виділяється зі скріншота за кольором, цифри зчитує Tesseract.js (OCR), малює canvas.
 (function () {
   const $ = (id) => document.getElementById(id);
   const ORANGE = "#f85a0a";
-  const GRAPHITE = "#33333a";
-  const FEED = { w: 1080, h: 1440 };
-  const STORY = { w: 1080, h: 1920 };
+  const GRAPHITE = "#26262b";
   const MAX_SIDE = 2000; // великі фото з телефона зменшуємо, щоб не вичерпати пам'ять
 
-  const PRESETS = [
-    { id: "collective", name: "Колективне", size: FEED },
-    { id: "typo", name: "Типографіка", size: FEED },
-    { id: "card", name: "Скріншот-картка", size: FEED },
-    { id: "story", name: "Сторіс", size: STORY },
-    { id: "sky", name: "Контур у небі", size: FEED },
-    { id: "frame", name: "Фірмова рамка", size: FEED },
-    { id: "story2", name: "Сторіс-контур", size: STORY },
+  const FORMATS = {
+    post: { w: 1080, h: 1350 }, // Instagram-стрічка 4:5
+    story: { w: 1080, h: 1920 }, // сторіс 9:16
+  };
+  const STYLES = [
+    { id: "classic", name: "Класика" },
+    { id: "numbers", name: "Цифри" },
+    { id: "route", name: "Маршрут" },
+    { id: "frame", name: "Рамка" },
   ];
 
-  const state = {
-    photo: null, // canvas із фото
-    shot: null, // canvas зі скріншотом
-    route: null, // { plain, outlined, thumb, ratio }
-    preset: "collective",
-    fx: 50,
-    fy: 60,
-    zoom: 100,
-    cropTop: 33,
-    cropBottom: 22,
-  };
+  const state = { photo: null, shot: null, route: null, style: "classic", fmt: "post", fx: 50, fy: 20, zoom: 100 };
 
-  const logo = new Image();
-  logo.src = "assets/logo.png";
+  const logoWhite = new Image();
+  logoWhite.src = "assets/logo-white.png";
+  const logoColor = new Image();
+  logoColor.src = "assets/logo.png";
 
   // ---------- Завантаження зображень ----------
 
@@ -146,7 +137,7 @@
     return { lab, sizes };
   }
 
-  // Знаходить на скріншоті слід маршруту (за кольором) і готує шари: plain, outlined і мініатюру карти.
+  // Знаходить на скріншоті слід маршруту (за кольором) і готує тонку помаранчеву лінію.
   // target — колір сліду [r,g,b]; за замовчуванням помаранчевий Strava.
   function extractRoute(shot, target) {
     const k = Math.min(1, 1300 / shot.width);
@@ -189,54 +180,131 @@
       }
     }
     if (count < 150) return null;
-    const pad = 26;
+    const pad = 20;
     x0 = Math.max(0, x0 - pad);
     y0 = Math.max(0, y0 - pad);
     x1 = Math.min(w - 1, x1 + pad);
     y1 = Math.min(h - 1, y1 + pad);
     const cw = x1 - x0 + 1;
     const ch = y1 - y0 + 1;
-    const sub = new Uint8Array(cw * ch);
-    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) sub[y * cw + x] = mask[(y + y0) * w + (x + x0)];
-    const thick = boxBlur(boxFilter(sub, cw, ch, 2, true), cw, ch, 1);
-    const halo = boxBlur(boxFilter(thick, cw, ch, 7, true), cw, ch, 2);
-
-    const layer = (alphaArr, rgb) => {
-      const cv = document.createElement("canvas");
-      cv.width = cw;
-      cv.height = ch;
-      const g = cv.getContext("2d");
-      const im = g.createImageData(cw, ch);
-      for (let i = 0; i < alphaArr.length; i++) {
-        im.data[i * 4] = rgb[0];
-        im.data[i * 4 + 1] = rgb[1];
-        im.data[i * 4 + 2] = rgb[2];
-        im.data[i * 4 + 3] = alphaArr[i];
+    const joined = boxFilter(mask, w, h, 1, true); // зашиваємо тонкі розриви
+    // Маску збільшуємо (канвасом, зі згладжуванням), стоншуємо й підсилюємо: виходить тонка рівна лінія
+    const S = Math.max(1, Math.min(4, Math.round(1300 / cw)));
+    const small = document.createElement("canvas");
+    small.width = cw;
+    small.height = ch;
+    const sg = small.getContext("2d");
+    const sim = sg.createImageData(cw, ch);
+    for (let y = 0; y < ch; y++) {
+      for (let x = 0; x < cw; x++) {
+        const v = joined[(y + y0) * w + (x + x0)];
+        const o = (y * cw + x) * 4;
+        sim.data[o] = sim.data[o + 1] = sim.data[o + 2] = 255;
+        sim.data[o + 3] = v;
       }
-      g.putImageData(im, 0, 0);
-      return cv;
-    };
-    const plain = layer(thick, [248, 90, 10]);
-    const white = layer(halo, [255, 255, 255]);
-    const outlined = document.createElement("canvas");
-    outlined.width = cw;
-    outlined.height = ch;
-    const og = outlined.getContext("2d");
-    og.drawImage(white, 0, 0);
-    og.drawImage(plain, 0, 0);
+    }
+    sg.putImageData(sim, 0, 0);
+    const big = document.createElement("canvas");
+    big.width = cw * S;
+    big.height = ch * S;
+    const bg = big.getContext("2d", { willReadFrequently: true });
+    bg.imageSmoothingQuality = "high";
+    bg.drawImage(small, 0, 0, big.width, big.height);
+    const bd = bg.getImageData(0, 0, big.width, big.height).data;
+    const alpha = new Uint8Array(big.width * big.height);
+    for (let i = 0; i < alpha.length; i++) alpha[i] = bd[i * 4 + 3];
+    const thinned = boxBlur(boxFilter(alpha, big.width, big.height, Math.max(2, Math.round(S * 1.4)), false), big.width, big.height, 2);
+    const out = document.createElement("canvas");
+    out.width = big.width;
+    out.height = big.height;
+    const og = out.getContext("2d");
+    const oim = og.createImageData(out.width, out.height);
+    for (let i = 0; i < thinned.length; i++) {
+      oim.data[i * 4] = 248;
+      oim.data[i * 4 + 1] = 90;
+      oim.data[i * 4 + 2] = 10;
+      oim.data[i * 4 + 3] = Math.min(255, thinned[i] * 2.2);
+    }
+    og.putImageData(oim, 0, 0);
+    return { thin: out, ratio: cw / ch };
+  }
 
-    // Мініатюра карти: фрагмент скріншота навколо маршруту
-    const thumb = document.createElement("canvas");
-    thumb.width = cw;
-    thumb.height = ch;
-    thumb.getContext("2d").drawImage(c, x0, y0, cw, ch, 0, 0, cw, ch);
-    return { plain, outlined, thumb, ratio: cw / ch };
+  // ---------- Розпізнавання цифр (Tesseract.js) ----------
+
+  const TESS_VER = "7.0.0";
+  const CDN = "https://cdn.jsdelivr.net/npm";
+  const workers = {};
+  let tessLoading = null;
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("load"));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function getWorker(lang) {
+    if (!window.Tesseract) {
+      tessLoading = tessLoading || loadScript(`${CDN}/tesseract.js@${TESS_VER}/dist/tesseract.min.js`);
+      await tessLoading;
+    }
+    if (!workers[lang]) {
+      workers[lang] = Tesseract.createWorker(lang, 1, {
+        workerPath: `${CDN}/tesseract.js@${TESS_VER}/dist/worker.min.js`,
+        corePath: `${CDN}/tesseract.js-core@${TESS_VER}`,
+        langPath: `${CDN}/@tesseract.js-data/${lang}@1.0.0/4.0.0_best_int`,
+      });
+    }
+    return workers[lang];
+  }
+
+  // «1h 15m» → 1:15, «58m 36s» → 58:36, «1:15:20», «1 год 15 хв»
+  function parseStats(raw) {
+    const t = String(raw || "").replace(/ /g, " ");
+    const out = {};
+    const dist = [...t.matchAll(/(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:km|кm|км)\b/gi)].map((m) => m[1].replace(",", "."));
+    const withDec = dist.find((d) => d.includes("."));
+    if (withDec || dist[0]) out.km = withDec || dist[0];
+    const pace = t.match(/(\d{1,2}):(\d{2})\s*\/\s*(?:km|кm|км)/i);
+    if (pace) out.pace = `${parseInt(pace[1], 10)}:${pace[2]}`;
+    let m;
+    if ((m = t.match(/(\d{1,2})\s*h\s*(\d{1,2})\s*m(?:in)?\b/i))) out.time = `${m[1]}:${m[2].padStart(2, "0")}`;
+    else if ((m = t.match(/(\d{1,2})\s*(?:год|г)\.?\s*(\d{1,2})\s*(?:хв|х)\b/i))) out.time = `${m[1]}:${m[2].padStart(2, "0")}`;
+    else if ((m = t.match(/(?:Time|Час|Тривалість)\D{0,14}(\d{1,2}:\d{2}:\d{2})/i))) out.time = m[1];
+    else if ((m = t.match(/\b(\d{1,2}:\d{2}:\d{2})\b/))) out.time = m[1];
+    else if ((m = t.match(/(\d{1,3})\s*m(?:in)?\s*(\d{1,2})\s*s\b/i))) out.time = `${m[1]}:${m[2].padStart(2, "0")}`;
+    else if ((m = t.match(/(?:Time|Час)\D{0,14}(\d{1,3}:\d{2})\b/i))) out.time = m[1];
+    return out;
+  }
+
+  async function ocrShot(canvas, onStep) {
+    const k = Math.min(1, 1600 / canvas.width);
+    const c = document.createElement("canvas");
+    c.width = Math.round(canvas.width * k);
+    c.height = Math.round(canvas.height * k);
+    c.getContext("2d").drawImage(canvas, 0, 0, c.width, c.height);
+    onStep("Завантажую модуль розпізнавання (вперше до ~20 с)…");
+    let text = "";
+    const w1 = await getWorker("eng");
+    onStep("Читаю цифри…");
+    text = (await w1.recognize(c)).data.text;
+    let stats = parseStats(text);
+    if (!stats.km) {
+      // Інтерфейс українською: потрібна українська модель
+      onStep("Читаю цифри (українська)…");
+      const w2 = await getWorker("ukr");
+      text += "\n" + (await w2.recognize(c)).data.text;
+      stats = parseStats(text);
+    }
+    return stats;
   }
 
   // ---------- Малювання ----------
 
-  const fontOswald = (px) => `700 ${px}px Oswald, "Arial Narrow", sans-serif`;
-  const fontMont = (px, wt) => `${wt || 700} ${px}px Montserrat, Arial, sans-serif`;
+  const MONT = (px, wt) => `${wt} ${px}px Montserrat, Arial, sans-serif`;
 
   function roundRect(g, x, y, w, h, r) {
     g.beginPath();
@@ -248,77 +316,56 @@
     g.closePath();
   }
 
-  // Текст із міжлітерним інтервалом (ls) і вирівнюванням; повертає ширину
-  function text(g, s, x, y, o) {
+  // Текст: top — верх рядка (як у CSS із line-height lh), ls — інтервал у em; повертає ширину
+  function T(g, s, x, top, size, wt, o) {
+    o = o || {};
+    const lh = o.lh || 1.22;
+    const base = top + ((lh - 1.22) / 2 + 0.97) * size;
     const str = o.upper ? String(s).toUpperCase() : String(s);
     g.save();
-    g.font = o.font;
+    g.font = MONT(size, wt);
     g.fillStyle = o.color || "#fff";
+    g.globalAlpha = o.alpha == null ? 1 : o.alpha;
     g.textBaseline = "alphabetic";
-    g.textAlign = "left";
     if (o.shadow) {
-      g.shadowColor = o.shadow[0];
-      g.shadowBlur = o.shadow[1];
-      g.shadowOffsetY = o.shadow[2] || 0;
+      g.shadowColor = "rgba(0,0,0,.4)";
+      g.shadowBlur = o.shadow;
+      g.shadowOffsetY = 2;
     }
-    const ls = o.ls || 0;
+    const ls = (o.em || 0) * size;
     const chars = [...str];
     const widths = chars.map((ch) => g.measureText(ch).width);
     const total = ls ? widths.reduce((a, b) => a + b, 0) + ls * (chars.length - 1) : g.measureText(str).width;
     let sx = x;
-    if (o.align === "center") sx = x - total / 2;
-    else if (o.align === "right") sx = x - total;
+    if (o.align === "right") sx = x - total;
+    else if (o.align === "center") sx = x - total / 2;
     if (ls) {
       let px = sx;
       chars.forEach((ch, i) => {
-        g.fillText(ch, px, y);
+        g.fillText(ch, px, base);
         px += widths[i] + ls;
       });
-    } else g.fillText(str, sx, y);
+    } else g.fillText(str, sx, base);
     g.restore();
     return total;
   }
 
-  // «Titan Club Rivne» в один рядок: перше слово білим, друге помаранчевим (ширину міряємо, щоб не злипалось)
-  function brandLine(g, x, y, px, ls, tail) {
-    const f = fontOswald(px);
-    const w1 = text(g, "Titan Club", x, y, { font: f, ls, upper: true });
-    const w2 = text(g, "Rivne", x + w1 + ls + px * 0.28, y, { font: f, color: ORANGE, ls, upper: true });
-    if (tail) text(g, "· " + tail, x + w1 + w2 + ls * 2 + px * 0.28 + px * 0.5, y, { font: f, ls, upper: true });
-    return w1 + w2;
-  }
+  const CAP = { upper: true, em: 0.3, alpha: 0.82 };
 
-  // Підбирає розмір шрифту, щоб текст влізав у maxW
-  function fit(g, s, startPx, maxW, make) {
-    let px = startPx;
-    g.save();
-    while (px > 24) {
-      g.font = make(px);
-      if (g.measureText(String(s).toUpperCase()).width <= maxW) break;
-      px -= 6;
-    }
-    g.restore();
-    return px;
-  }
-
-  // fx/fy — зсув у відсотках (0–100), z — додатковий масштаб (1 = лише «заповнити»); без масштабу фото тієї ж пропорції зсувати нікуди
   function cover(g, img, x, y, w, h, fx, fy, z) {
     const s = Math.max(w / img.width, h / img.height) * (z || 1);
     const dw = img.width * s;
     const dh = img.height * s;
-    const dx = x - (dw - w) * (fx / 100);
-    const dy = y - (dh - h) * (fy / 100);
-    g.drawImage(img, dx, dy, dw, dh);
+    g.drawImage(img, x - (dw - w) * (fx / 100), y - (dh - h) * (fy / 100), dw, dh);
   }
 
-  // Дешеве розмиття без ctx.filter (Safari): зменшуємо й збільшуємо
   function blurred(img, w, h, fx, fy) {
     const small = document.createElement("canvas");
     small.width = Math.round(w / 24);
     small.height = Math.round(h / 24);
     const sg = small.getContext("2d");
     sg.imageSmoothingQuality = "high";
-    cover(sg, img, 0, 0, small.width, small.height, fx, fy);
+    cover(sg, img, 0, 0, small.width, small.height, fx, fy, 1);
     return small;
   }
 
@@ -335,88 +382,79 @@
     return gr;
   }
 
-  // Фірмова смуга-«вказівник» (помаранчево-графітова діагональ)
-  function stripe(g, x, y, w, h) {
-    g.save();
-    g.beginPath();
-    g.rect(x, y, w, h);
-    g.clip();
-    g.fillStyle = GRAPHITE;
-    g.fillRect(x, y, w, h);
-    g.fillStyle = ORANGE;
-    for (let sx = x - h; sx < x + w + h; sx += 70) {
-      g.beginPath();
-      g.moveTo(sx, y + h);
-      g.lineTo(sx + 46, y + h);
-      g.lineTo(sx + 46 + h * 0.5, y);
-      g.lineTo(sx + h * 0.5, y);
-      g.closePath();
-      g.fill();
+  let grainPattern = null;
+  function grain(g, w, h) {
+    if (!grainPattern) {
+      const n = document.createElement("canvas");
+      n.width = n.height = 256;
+      const ng = n.getContext("2d");
+      const im = ng.createImageData(256, 256);
+      for (let i = 0; i < im.data.length; i += 4) {
+        const v = 128 + (Math.random() - 0.5) * 140;
+        im.data[i] = im.data[i + 1] = im.data[i + 2] = v;
+        im.data[i + 3] = 255;
+      }
+      ng.putImageData(im, 0, 0);
+      grainPattern = g.createPattern(n, "repeat");
     }
-    g.restore();
-  }
-
-  function logoBadge(g, x, y, w) {
-    if (!logo.complete || !logo.naturalWidth) return;
-    const pad = Math.round(w * 0.06);
-    const iw = w - pad * 2;
-    const ih = iw * (logo.naturalHeight / logo.naturalWidth);
     g.save();
-    g.fillStyle = "#fff";
-    roundRect(g, x, y, w, ih + pad * 2, w * 0.15);
-    g.fill();
-    g.drawImage(logo, x + pad, y + pad, iw, ih);
+    g.globalAlpha = 0.07;
+    g.globalCompositeOperation = "overlay";
+    g.fillStyle = grainPattern;
+    g.fillRect(0, 0, w, h);
     g.restore();
   }
 
-  function drawRoute(g, layer, x, y, w, glow) {
-    if (!layer) return;
+  function logoMark(g, x, y, h, color) {
+    const img = color ? logoColor : logoWhite;
+    if (!img.complete || !img.naturalWidth) return;
+    const w = h * (img.naturalWidth / img.naturalHeight);
+    g.save();
+    g.globalAlpha = 0.95;
+    g.drawImage(img, x, y, w, h);
+    g.restore();
+  }
+
+  function drawRoute(g, x, y, w, shadow) {
+    if (!state.route) return 0;
     const h = w / state.route.ratio;
     g.save();
-    if (glow) {
-      g.shadowColor = glow;
-      g.shadowBlur = 24;
-    } else {
-      g.shadowColor = "rgba(0,0,0,.4)";
-      g.shadowBlur = 18;
-      g.shadowOffsetY = 6;
+    if (shadow) {
+      g.shadowColor = "rgba(0,0,0,.35)";
+      g.shadowBlur = 8;
+      g.shadowOffsetY = 2;
     }
-    g.drawImage(layer, x, y, w, h);
+    g.drawImage(state.route.thin, x, y, w, h);
     g.restore();
     return h;
   }
 
-  function mapCard(g, x, y, w, h, r, border) {
-    if (!state.route) return;
-    g.save();
-    roundRect(g, x, y, w, h, r);
-    g.fillStyle = border;
-    g.fill();
-    g.clip();
-    roundRect(g, x + 6, y + 6, w - 12, h - 12, r - 6);
-    g.clip();
-    cover(g, state.route.thumb, x + 6, y + 6, w - 12, h - 12, 50, 50);
-    g.restore();
-  }
-
   function values() {
-    const km = ($("ph-km").value || "").trim().replace(".", ",") || "0";
-    const time = ($("ph-time").value || "").trim() || "—";
-    let pace = ($("ph-pace").value || "").trim();
-    if (!pace) pace = autoPace(km, time) || "—";
+    const fix = (s) => s.trim();
+    let km = fix($("ph-km").value).replace(",", ".");
+    const time = fix($("ph-time").value);
+    let pace = fix($("ph-pace").value);
+    if (!pace) pace = autoPace(km, time);
     return {
-      km,
-      time,
-      pace,
-      headline: ($("ph-headline").value || "").trim() || "Ми пробігли",
-      sub: ($("ph-sub").value || "").trim() || "Titan Club Rivne",
+      km: km || "—",
+      time: time || "—",
+      timeUnit: timeUnit(time),
+      pace: pace || "—",
+      headline: fix($("ph-headline").value) || "Ми пробігли",
+      sub: fix($("ph-sub").value),
     };
   }
 
-  // Темп із км і часу: «1:15:20» (г:хв:с) або «58:36» (хв:с); два числа з першим < 10 — «год:хв»
+  // Двоскладовий час: «1:15» (перша частина < 10) — год:хв, інакше хв:с
+  function timeUnit(t) {
+    const p = String(t).split(":");
+    if (p.length === 2 && /^\d+$/.test(p[0]) && /^\d+$/.test(p[1])) return parseInt(p[0], 10) < 10 ? "год" : "хв";
+    return "";
+  }
+
   function autoPace(kmStr, timeStr) {
-    const km = parseFloat(kmStr.replace(",", "."));
-    const parts = timeStr.split(":").map((x) => parseInt(x, 10));
+    const km = parseFloat(String(kmStr).replace(",", "."));
+    const parts = String(timeStr).split(":").map((x) => parseInt(x, 10));
     if (!(km > 0) || parts.some((p) => !Number.isFinite(p))) return "";
     let sec;
     if (parts.length === 3) sec = parts[0] * 3600 + parts[1] * 60 + parts[2];
@@ -426,25 +464,149 @@
     return `${Math.floor(p / 60)}:${String(Math.round(p % 60)).padStart(2, "0")}`;
   }
 
-  function headLines(s) {
-    const words = s.split(/\s+/).filter(Boolean);
-    if (words.length <= 1) return [{ t: words[0] || "", c: ORANGE }];
-    return [{ t: words.slice(0, -1).join(" "), c: "#fff" }, { t: words[words.length - 1], c: ORANGE }];
-  }
-
   const placeholderPhoto = () => {
     const c = document.createElement("canvas");
     c.width = 1200;
     c.height = 1600;
     const g = c.getContext("2d");
-    g.fillStyle = linear(g, 0, 0, 0, 1600, [[0, "#3b6fb6"], [0.55, "#e9a35f"], [1, "#4a4a52"]]);
+    g.fillStyle = linear(g, 0, 0, 0, 1600, [[0, "#3b6fb6"], [0.55, "#9aa6b8"], [1, "#4a4a52"]]);
     g.fillRect(0, 0, 1200, 1600);
     return c;
   };
 
-  function render(presetId, scale) {
-    const p = PRESETS.find((x) => x.id === presetId);
-    const { w, h } = p.size;
+  // Фото на повну картку: пост — на всю ширину; сторіс — смуга 3:4 по центру з м'яким продовженням розмиттям
+  function paintPhoto(g, fmt, photo) {
+    const { w, h } = FORMATS[fmt];
+    const { fx, fy } = state;
+    const zm = state.zoom / 100;
+    const f = "saturate(.86) contrast(1.06) brightness(.98)";
+    if (fmt === "post") {
+      withFilter(g, f, () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
+      return;
+    }
+    g.fillStyle = "#1b1c20";
+    g.fillRect(0, 0, w, h);
+    g.save();
+    g.filter = "none";
+    g.drawImage(blurred(photo, w, h, fx, fy), 0, 0, w, h);
+    g.restore();
+    g.fillStyle = "rgba(20,21,26,.62)";
+    g.fillRect(0, 0, w, h);
+    const strip = document.createElement("canvas");
+    strip.width = w;
+    strip.height = 1440;
+    const sg = strip.getContext("2d");
+    withFilter(sg, f, () => cover(sg, photo, 0, 0, w, 1440, fx, fy, zm));
+    sg.globalCompositeOperation = "destination-in";
+    sg.fillStyle = linear(sg, 0, 0, 0, 1440, [[0, "rgba(0,0,0,0)"], [220 / 1440, "#000"], [1220 / 1440, "#000"], [1, "rgba(0,0,0,0)"]]);
+    sg.fillRect(0, 0, w, 1440);
+    g.drawImage(strip, 0, 240);
+  }
+
+  function toneAndFade(g, fmt, strongTop) {
+    const { w, h } = FORMATS[fmt];
+    g.fillStyle = linear(g, 0, 0, 0, h, [[0, `rgba(12,22,48,${strongTop ? 0.55 : 0.42})`], [strongTop ? 0.5 : 0.38, "rgba(12,22,48,0)"], [1, "rgba(12,22,48,0)"]]);
+    g.fillRect(0, 0, w, h);
+    const top = fmt === "post" ? 1000 : 1290;
+    g.fillStyle = linear(g, 0, h, 0, top, [[0, fmt === "post" ? "rgba(20,20,24,.92)" : "rgba(20,20,24,.96)"], [0.4, fmt === "post" ? "rgba(20,20,24,.55)" : "rgba(20,20,24,.6)"], [1, "rgba(20,20,24,0)"]]);
+    g.fillRect(0, top, w, h - top);
+  }
+
+  function topBar(g, fmt, o) {
+    const S = fmt === "story";
+    const M = S ? 64 : 56;
+    const { w } = FORMATS[fmt];
+    logoMark(g, M, M - 6, S ? 74 : 62, o && o.colorLogo);
+    T(g, "#TitanClubRivne", w - M, M + (S ? 14 : 10), S ? 20 : 17, 600, { ...CAP, align: "right", color: o && o.ink });
+    g.fillStyle = (o && o.hair) || "rgba(255,255,255,.4)";
+    g.fillRect(M, M + (S ? 100 : 84), w - 2 * M, 1);
+  }
+
+  function footer(g, fmt, o) {
+    const S = fmt === "story";
+    const M = S ? 64 : 56;
+    const { w, h } = FORMATS[fmt];
+    const fy = S ? h - M - 30 : h - M + 4;
+    const sz = S ? 19 : 15;
+    const ink = (o && o.ink) || "#fff";
+    g.fillStyle = (o && o.hair) || "rgba(255,255,255,.3)";
+    g.fillRect(M, fy - (S ? 22 : 18), w - 2 * M, 1);
+    const w1 = T(g, "Titan Club Rivne", M, fy, sz, 600, { upper: true, em: 0.34, alpha: 0.82, color: ink });
+    const w2 = T(g, " · ", M + w1 + sz * 0.34, fy, sz, 600, { em: 0.34, color: ORANGE });
+    T(g, "Premium", M + w1 + w2 + sz * 0.68, fy, sz, 600, { upper: true, em: 0.34, alpha: 0.82, color: ink });
+    T(g, "titan run", w - M, fy, sz, 600, { upper: true, em: 0.34, alpha: 0.6, align: "right", color: ink });
+  }
+
+  // Відстань | Час | Темп (нижній блок). Для світлих підкладок ink/hair міняються.
+  function statsBlock(g, fmt, v, y0, o) {
+    const S = fmt === "story";
+    const M = S ? 64 : 56;
+    const { w } = FORMATS[fmt];
+    o = o || {};
+    const ink = o.ink || "#fff";
+    const hair = o.hair || "rgba(255,255,255,.32)";
+    const lab = S ? 19 : 15;
+    const label = (x, y, text, accent) => {
+      if (accent) {
+        g.fillStyle = ORANGE;
+        g.fillRect(x, y + lab * 0.5, S ? 34 : 26, 3);
+      }
+      T(g, text, x + (accent ? (S ? 48 : 40) : 0), y, lab, 600, { upper: true, em: 0.3, alpha: 0.82, color: ink });
+    };
+    const k = o.scale || 1;
+    if (S && !o.row) {
+      const nsz = 215 * k;
+      label(M, y0, "Відстань", true);
+      const kw = T(g, v.km, M - 6, y0 + 50, nsz, 200, { lh: 0.8, em: -0.04, color: ink });
+      T(g, "КМ", M - 6 + kw + 18, y0 + 50 + nsz * 0.76 - 44 * 0.97 - 4, 44, 600, { upper: true, em: 0.12, color: ORANGE });
+      const by2 = y0 + 300 * k;
+      g.fillStyle = hair;
+      g.fillRect(M, by2 - 30, w - 2 * M, 1);
+      label(M, by2, "Час");
+      const tw = T(g, v.time, M, by2 + 40, 84, 400, { lh: 1, em: -0.02, color: ink });
+      if (v.timeUnit) T(g, v.timeUnit, M + tw + 10, by2 + 40 + 84 * 0.86 - 30 * 0.97, 30, 500, { upper: true, em: 0.08, alpha: 0.75, color: ink });
+      g.fillStyle = hair;
+      g.fillRect(M + 420, by2, 1, 120);
+      label(M + 460, by2, "Темп");
+      const pw = T(g, v.pace, M + 460, by2 + 40, 84, 400, { lh: 1, em: -0.02, color: ink });
+      T(g, "/км", M + 460 + pw + 10, by2 + 40 + 84 * 0.86 - 30 * 0.97, 30, 500, { upper: true, em: 0.08, alpha: 0.75, color: ink });
+    } else {
+      const nsz = 134 * k;
+      label(M, y0, "Відстань", true);
+      const kw = T(g, v.km, M - 4, y0 + 40, nsz, 200, { lh: 0.8, em: -0.04, color: ink });
+      T(g, "КМ", M - 4 + kw + 12, y0 + 40 + nsz * 0.76 - 26 * 0.97 - 3, 26, 600, { upper: true, em: 0.12, color: ORANGE });
+      g.fillStyle = hair;
+      g.fillRect(M + 520, y0, 1, 130);
+      label(M + 556, y0, "Час");
+      const tw = T(g, v.time, M + 556, y0 + 46, 62, 400, { lh: 1, em: -0.02, color: ink });
+      if (v.timeUnit) T(g, v.timeUnit, M + 556 + tw + 6, y0 + 46 + 62 * 0.86 - 19 * 0.97, 19, 500, { upper: true, em: 0.08, alpha: 0.75, color: ink });
+      g.fillStyle = hair;
+      g.fillRect(M + 756, y0, 1, 130);
+      label(M + 792, y0, "Темп");
+      const pw = T(g, v.pace, M + 792, y0 + 46, 62, 400, { lh: 1, em: -0.02, color: ink });
+      T(g, "/км", M + 792 + pw + 6, y0 + 46 + 62 * 0.86 - 19 * 0.97, 19, 500, { upper: true, em: 0.08, alpha: 0.75, color: ink });
+    }
+  }
+
+  // Заголовок: «Ми / пробігли.» (остання крапка помаранчева)
+  function headline(g, fmt, v, ty) {
+    const S = fmt === "story";
+    const M = S ? 64 : 56;
+    const size = S ? 118 : 84;
+    const words = v.headline.split(/\s+/).filter(Boolean);
+    const lines = words.length > 1 ? [words.slice(0, -1).join(" "), words[words.length - 1]] : [words[0] || ""];
+    let y = ty;
+    lines.forEach((ln, i) => {
+      const last = i === lines.length - 1;
+      const w1 = T(g, ln, M, y, size, 700, { lh: 0.98, em: -0.045 });
+      if (last && !/[.!?…]$/.test(ln)) T(g, ".", M + w1 - size * 0.045, y, size, 700, { lh: 0.98, color: ORANGE });
+      y += size * 0.98;
+    });
+    if (v.sub) T(g, v.sub, M, ty + (S ? 290 : 208), S ? 22 : 17, 600, { upper: true, em: 0.3, alpha: 0.85 });
+  }
+
+  function render(styleId, fmt, scale) {
+    const { w, h } = FORMATS[fmt];
     const cv = document.createElement("canvas");
     cv.width = Math.round(w * scale);
     cv.height = Math.round(h * scale);
@@ -452,238 +614,81 @@
     g.scale(scale, scale);
     const v = values();
     const photo = state.photo || placeholderPhoto();
-    const { fx, fy } = state;
-    const zm = state.zoom / 100;
-    const lines = headLines(v.headline);
-    const tag = "#TitanClubRivne";
+    const S = fmt === "story";
+    const M = S ? 64 : 56;
 
-    const statBlock = (x, y, label, val, size, color) => {
-      text(g, val, x, y, { font: fontOswald(size), color: color || "#fff" });
-      g.save();
-      g.font = fontOswald(size);
-      const wv = g.measureText(val).width;
-      g.restore();
-      text(g, label, x, y + size * 0.36, { font: fontMont(Math.round(size * 0.34)), color: "rgba(255,255,255,.85)", ls: 2, upper: true });
-      return wv;
-    };
-    const bigKm = (x, y, size, unitSize, maxW) => {
-      const px = fit(g, v.km, size, maxW, fontOswald);
-      const wv = text(g, v.km, x, y, { font: fontOswald(px), color: "#fff" });
-      text(g, "км", x + wv + 10, y, { font: fontOswald(unitSize * (px / size)), color: ORANGE, upper: true });
-      return px;
-    };
-
-    if (presetId === "collective") {
-      withFilter(g, "contrast(1.1) saturate(1.25) brightness(1.03)", () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
-      g.save();
-      g.globalCompositeOperation = "soft-light";
-      const rg = g.createRadialGradient(w / 2, h * 0.4, h * 0.2, w / 2, h * 0.4, h * 0.85);
-      rg.addColorStop(0, "rgba(255,170,90,0)");
-      rg.addColorStop(1, "rgba(248,90,10,.3)");
-      g.fillStyle = rg;
+    if (styleId === "frame") {
+      // Світла рамка: фото у тонкому полі, цифри друкарськими літерами на кремовій підкладці
+      const cream = "#efece6";
+      const panel = S ? 300 : 272;
+      const m = 36;
+      g.fillStyle = cream;
       g.fillRect(0, 0, w, h);
-      g.restore();
-      g.fillStyle = linear(g, 0, 0, 0, h, [[0, "rgba(0,0,0,0)"], [0.55, "rgba(0,0,0,0)"], [0.78, "rgba(20,20,26,.65)"], [1, "rgba(20,20,26,.95)"]]);
-      g.fillRect(0, 0, w, h);
-      logoBadge(g, 48, 48, 180);
-      const sh = ["rgba(0,0,0,.5)", 26, 4];
-      text(g, v.sub, 48, 290, { font: fontOswald(30), color: "#fff", ls: 6, upper: true, shadow: sh });
-      let y = 400;
-      lines.forEach((l) => {
-        text(g, l.t, 48, y, { font: fontOswald(fit(g, l.t, 104, 900, fontOswald)), color: l.c === "#fff" ? "#fff" : "#ffc79c", upper: true, shadow: sh });
-        y += 100;
-      });
-      text(g, tag, 48, h - 330, { font: fontMont(26), color: "#fff", shadow: ["rgba(0,0,0,.6)", 8, 2] });
-      const mapW = state.route ? 320 : 0;
-      bigKm(48, h - 130, 150, 54, w - 96 - mapW - 30);
-      statBlock(48, h - 62, "час", v.time, 58);
-      statBlock(48 + 280, h - 62, "темп /км", v.pace, 58);
-      mapCard(g, w - 48 - 320, h - 46 - 340, 320, 340, 30, "#fff");
-    } else if (presetId === "typo") {
-      withFilter(g, "grayscale(.35) contrast(1.15) saturate(1.1)", () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
       g.save();
-      g.globalCompositeOperation = "multiply";
-      g.fillStyle = linear(g, 0, 0, 0, h, [[0, "rgba(248,90,10,.55)"], [0.62, "rgba(51,51,58,0)"], [1, "rgba(51,51,58,0)"]]);
-      g.fillRect(0, 0, w, h);
-      g.restore();
-      g.fillStyle = linear(g, 0, h, 0, h * 0.66, [[0, "rgba(20,20,26,.92)"], [1, "rgba(20,20,26,0)"]]);
-      g.fillRect(0, h * 0.66, w, h * 0.34);
-      const px = fit(g, v.km, 360, 760, fontOswald);
-      const wv = text(g, v.km, 44, 70 + px * 0.82, { font: fontOswald(px), color: "#fff", shadow: ["rgba(0,0,0,.35)", 40, 8] });
-      text(g, "км", 44 + wv + 14, 70 + px * 0.82, { font: fontOswald(90), color: "#fff", upper: true });
-      const sh = ["rgba(0,0,0,.5)", 14, 3];
-      text(g, v.sub, 52, 70 + px * 0.82 + 70, { font: fontOswald(46), color: "#fff", ls: 7, upper: true, shadow: sh });
-      statBlock(52, 70 + px * 0.82 + 160, "час", v.time, 72);
-      statBlock(52 + 300, 70 + px * 0.82 + 160, "темп /км", v.pace, 72);
-      logoBadge(g, w - 44 - 170, 56, 170);
-      brandLine(g, 52, h - 76, 34, 4);
-      text(g, `${v.headline} · ${tag}`, 52, h - 40, { font: fontMont(22, 600), color: "rgba(255,255,255,.85)" });
-      if (state.route) {
-        g.save();
-        g.beginPath();
-        g.arc(w - 52 - 105, h - 44 - 105, 105, 0, Math.PI * 2);
-        g.fillStyle = ORANGE;
-        g.fill();
-        g.beginPath();
-        g.arc(w - 52 - 105, h - 44 - 105, 98, 0, Math.PI * 2);
-        g.clip();
-        cover(g, state.route.thumb, w - 52 - 210, h - 44 - 210, 210, 210, 50, 50);
-        g.restore();
-      }
-    } else if (presetId === "card") {
-      withFilter(g, "contrast(1.06) saturate(1.15)", () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
-      logoBadge(g, 36, 36, 160);
-      g.save();
-      g.font = fontOswald(28);
-      const pw = 330;
-      g.fillStyle = "rgba(20,20,26,.82)";
-      roundRect(g, w - 36 - pw, 48, pw, 62, 31);
-      g.fill();
-      g.restore();
-      brandLine(g, w - 36 - pw + 30, 92, 28, 3);
-      if (state.shot) {
-        const sw = state.shot.width;
-        const sy = Math.round((state.cropTop / 100) * state.shot.height);
-        const sh2 = Math.max(80, Math.round(state.shot.height * (1 - (state.cropTop + state.cropBottom) / 100)));
-        const cw = w - 72;
-        const ch = Math.min(h * 0.6, cw * (sh2 / sw));
-        const cy = h - 36 - ch;
-        g.save();
-        g.shadowColor = "rgba(0,0,0,.45)";
-        g.shadowBlur = 50;
-        g.shadowOffsetY = 16;
-        g.fillStyle = "#fff";
-        roundRect(g, 36, cy, cw, ch, 40);
-        g.fill();
-        g.restore();
-        g.save();
-        roundRect(g, 42, cy + 6, cw - 12, ch - 12, 34);
-        g.clip();
-        g.drawImage(state.shot, 0, sy, sw, sh2, 42, cy + 6, cw - 12, ch - 12);
-        g.restore();
-      } else {
-        const cy = h - 36 - 300;
-        g.fillStyle = "#fff";
-        roundRect(g, 36, cy, w - 72, 300, 40);
-        g.fill();
-        text(g, v.sub, 80, cy + 70, { font: fontOswald(40), color: GRAPHITE, ls: 2, upper: true });
-        text(g, v.km, 80, cy + 210, { font: fontOswald(110), color: ORANGE });
-        text(g, "км", 80 + 330, cy + 210, { font: fontOswald(48), color: GRAPHITE, upper: true });
-        text(g, v.time, 470, cy + 210, { font: fontOswald(70), color: GRAPHITE });
-        text(g, v.pace, 760, cy + 210, { font: fontOswald(70), color: GRAPHITE });
-      }
-    } else if (presetId === "story") {
-      g.fillStyle = GRAPHITE;
-      g.fillRect(0, 0, w, h);
-      g.drawImage(blurred(photo, w, h, fx, fy), 0, 0, w, h);
-      g.fillStyle = "rgba(20,20,26,.5)";
-      g.fillRect(0, 0, w, h);
-      logoBadge(g, w / 2 - 115, 70, 230);
-      text(g, v.sub, w / 2, 410, { font: fontOswald(34), color: "#ffb27a", ls: 8, upper: true, align: "center" });
-      text(g, v.headline + "!", w / 2, 540, { font: fontOswald(fit(g, v.headline + "!", 130, 900, fontOswald)), align: "center", upper: true });
-      g.save();
-      g.shadowColor = "rgba(0,0,0,.5)";
-      g.shadowBlur = 70;
-      g.shadowOffsetY = 24;
-      g.fillStyle = "#fff";
-      roundRect(g, 90, 660, w - 180, 640, 44);
-      g.fill();
-      g.restore();
-      g.save();
-      roundRect(g, 98, 668, w - 196, 624, 38);
+      g.beginPath();
+      g.rect(m, m, w - 2 * m, h - m - panel);
       g.clip();
-      withFilter(g, "contrast(1.08) saturate(1.2)", () => cover(g, photo, 98, 668, w - 196, 624, fx, fy, zm));
+      withFilter(g, "saturate(.88) contrast(1.05) brightness(.99)", () => cover(g, photo, m, m, w - 2 * m, h - m - panel, state.fx, state.fy, state.zoom / 100));
+      g.fillStyle = linear(g, 0, m, 0, m + 420, [[0, "rgba(12,22,48,.38)"], [1, "rgba(12,22,48,0)"]]);
+      g.fillRect(m, m, w - 2 * m, 420);
       g.restore();
-      const mapW = state.route ? 250 : 0;
-      bigKm(90, 1530, 190, 60, w - 180 - 330);
-      statBlock(w - 90 - 260, 1450, "час", v.time, 64);
-      statBlock(w - 90 - 260, 1590, "темп /км", v.pace, 64);
-      mapCard(g, 90, h - 110 - 220, 220, 220, 34, "#fff");
-      brandLine(g, mapW ? 350 : 90, h - 190, 36, 3);
-      text(g, tag, mapW ? 350 : 90, h - 140, { font: fontOswald(36), color: ORANGE, ls: 3, upper: true });
-    } else if (presetId === "sky") {
-      withFilter(g, "contrast(1.08) saturate(1.1)", () => cover(g, photo, 0, 0, w, h, fx, fy, zm));
-      g.fillStyle = linear(g, 0, 0, 0, h, [[0, "rgba(51,51,58,0)"], [0.4, "rgba(51,51,58,0)"], [0.76, "rgba(51,51,58,.75)"], [1, "rgba(51,51,58,.97)"]]);
-      g.fillRect(0, 0, w, h);
-      if (state.route) drawRoute(g, state.route.outlined, 560, 90, 430);
-      logoBadge(g, 48, 48, 160);
-      const sh = ["rgba(0,0,0,.5)", 24, 4];
-      text(g, v.sub, 52, 330, { font: fontOswald(30), color: "#ffd1b0", ls: 6, upper: true, shadow: sh });
-      let y = 440;
-      lines.forEach((l) => {
-        text(g, l.t, 52, y, { font: fontOswald(fit(g, l.t, 112, 500, fontOswald)), color: l.c, upper: true, shadow: sh });
-        y += 106;
-      });
-      stripe(g, 0, h - 16, w, 16);
-      bigKm(52, h - 190, 190, 60, w - 104);
-      statBlock(52, h - 76, "час", v.time, 64);
-      statBlock(52 + 330, h - 76, "темп /км", v.pace, 64);
-      text(g, "Titan Club", w - 52, h - 90, { font: fontOswald(30), ls: 4, upper: true, align: "right" });
-      text(g, "Rivne Premium", w - 52, h - 54, { font: fontOswald(30), color: ORANGE, ls: 4, upper: true, align: "right" });
-    } else if (presetId === "frame") {
+      logoMark(g, m + 28, m + 24, S ? 64 : 54);
+      T(g, "#TitanClubRivne", w - m - 28, m + 36, S ? 19 : 16, 600, { ...CAP, align: "right" });
+      if (state.route) drawRoute(g, w - m - 28 - (S ? 200 : 150) + 6, m + (S ? 110 : 90), S ? 200 : 150, true);
+      const ink = GRAPHITE;
+      const hair = "rgba(38,38,43,.28)";
+      const y0 = h - panel + (S ? 40 : 30);
+      statsBlock(g, fmt, v, y0, { ink, hair, scale: 0.84, row: true });
+      g.fillStyle = hair;
+      g.fillRect(M, h - (S ? 62 : 50), w - 2 * M, 1);
+      T(g, "Titan Club Rivne", M, h - (S ? 44 : 38), S ? 17 : 14, 600, { upper: true, em: 0.34, alpha: 0.7, color: ink });
+      T(g, "Premium", w - M, h - (S ? 44 : 38), S ? 17 : 14, 600, { upper: true, em: 0.34, color: ORANGE, align: "right" });
+      return cv;
+    }
+
+    paintPhoto(g, fmt, photo);
+    toneAndFade(g, fmt, styleId === "numbers");
+    grain(g, w, h);
+    topBar(g, fmt);
+
+    if (styleId === "classic") {
+      headline(g, fmt, v, M + (S ? 190 : 150));
+      drawRoute(g, w - M - (S ? 300 : 190) + 10, M + (S ? 150 : 112), S ? 300 : 190, true);
+      statsBlock(g, fmt, v, S ? 1345 : 1100);
+      footer(g, fmt);
+    } else if (styleId === "numbers") {
+      // Цифри вгорі, у небі: поміч для кадрів, де внизу немає місця
+      const top = M + (S ? 150 : 120);
+      const nsz = S ? 300 : 196;
+      g.save();
+      T(g, "Відстань", M + (S ? 48 : 40), top, S ? 19 : 15, 600, { upper: true, em: 0.3, alpha: 0.9, shadow: 10 });
       g.fillStyle = ORANGE;
-      g.fillRect(0, 0, w, h);
-      g.save();
-      roundRect(g, 36, 36, w - 72, h - 36 - 330, 30);
-      g.clip();
-      withFilter(g, "contrast(1.08) saturate(1.1)", () => cover(g, photo, 36, 36, w - 72, h - 366, fx, fy, zm));
-      g.fillStyle = linear(g, 0, h - 330, 0, h - 330 - 520, [[0, "rgba(51,51,58,.6)"], [1, "rgba(51,51,58,0)"]]);
-      g.fillRect(36, h - 330 - 520, w - 72, 520);
-      if (state.route) drawRoute(g, state.route.outlined, 620, 130, 330);
-      logoBadge(g, 66, 66, 140);
+      g.fillRect(M, top + (S ? 10 : 8), S ? 34 : 26, 3);
+      const kw = T(g, v.km, M - 6, top + (S ? 52 : 42), nsz, 200, { lh: 0.8, em: -0.04, shadow: 24 });
+      T(g, "КМ", M - 6 + kw + 18, top + (S ? 52 : 42) + nsz * 0.76 - 44 * 0.97, S ? 48 : 30, 600, { upper: true, em: 0.12, color: ORANGE, shadow: 10 });
+      const ry = top + (S ? 52 : 42) + nsz * 0.95;
+      const row = (x, label, val, suffix) => {
+        T(g, label, x, ry, S ? 19 : 15, 600, { upper: true, em: 0.3, alpha: 0.9, shadow: 10 });
+        const sz = S ? 86 : 58;
+        const tw = T(g, val, x, ry + (S ? 40 : 30), sz, 400, { lh: 1, em: -0.02, shadow: 20 });
+        if (suffix) T(g, suffix, x + tw + 8, ry + (S ? 40 : 30) + sz * 0.86 - 22 * 0.97, S ? 28 : 18, 500, { upper: true, em: 0.08, alpha: 0.85, shadow: 10 });
+      };
+      row(M, "Час", v.time, v.timeUnit);
+      row(M + (S ? 380 : 300), "Темп", v.pace, "/км");
       g.restore();
-      g.fillStyle = GRAPHITE;
-      roundRect(g, 36, h - 294, w - 72, 294 + 30, 30);
-      g.fill();
-      let x = 80;
-      lines.forEach((l, i) => {
-        const px = fit(g, l.t, 72, 900, fontOswald);
-        const wv = text(g, l.t, x, h - 294 + 100, { font: fontOswald(px), color: l.c, upper: true });
-        x += wv + 18;
-      });
-      statBlock(80, h - 70, "км", v.km, 96, ORANGE);
-      g.save();
-      g.font = fontOswald(96);
-      const kw = g.measureText(v.km).width;
-      g.restore();
-      statBlock(80 + kw + 60, h - 70, "час", v.time, 72);
-      statBlock(80 + kw + 60 + 300, h - 70, "темп /км", v.pace, 72);
-      stripe(g, 36, h - 16, w - 72, 16);
-    } else if (presetId === "story2") {
-      g.fillStyle = GRAPHITE;
-      g.fillRect(0, 0, w, h);
-      const rg = g.createRadialGradient(w * 0.8, h * 0.18, 0, w * 0.8, h * 0.18, h * 0.5);
-      rg.addColorStop(0, "rgba(248,90,10,.35)");
-      rg.addColorStop(1, "rgba(51,51,58,0)");
-      g.fillStyle = rg;
-      g.fillRect(0, 0, w, h);
-      logoBadge(g, 60, 70, 170);
-      if (state.route) drawRoute(g, state.route.plain, w - 50 - 470, 150, 470, "rgba(248,90,10,.6)");
-      text(g, v.sub, 62, 590, { font: fontOswald(32), color: ORANGE, ls: 7, upper: true });
-      let y = 710;
-      lines.forEach((l) => {
-        text(g, l.t, 62, y, { font: fontOswald(fit(g, l.t, 128, 560, fontOswald)), color: l.c, upper: true });
-        y += 118;
-      });
-      g.save();
-      g.shadowColor = "rgba(0,0,0,.5)";
-      g.shadowBlur = 70;
-      g.shadowOffsetY = 24;
-      g.fillStyle = "#fff";
-      roundRect(g, 60, 880, w - 120, 560, 36);
-      g.fill();
-      g.restore();
-      g.save();
-      roundRect(g, 68, 888, w - 136, 544, 30);
-      g.clip();
-      withFilter(g, "contrast(1.08) saturate(1.15)", () => cover(g, photo, 68, 888, w - 136, 544, fx, fy, zm));
-      g.restore();
-      const px = bigKm(62, 1700, 220, 64, 560);
-      statBlock(w - 62 - 280, 1630, "час", v.time, 78);
-      statBlock(w - 62 - 280, 1760, "темп /км", v.pace, 78);
-      brandLine(g, 62, h - 70, 36, 5, tag);
-      stripe(g, 0, h - 16, w, 16);
-      void px;
+      if (v.sub) T(g, v.sub, M, S ? 1500 : 1180, S ? 22 : 17, 600, { upper: true, em: 0.3, alpha: 0.85 });
+      footer(g, fmt);
+    } else if (styleId === "route") {
+      // Маршрут — головний елемент: великий контур по центру неба
+      const hMax = S ? 640 : 430; // висота контуру обмежена, щоб він не заходив на людей
+      const ratio = state.route ? state.route.ratio : 0.7;
+      const rw = Math.min(S ? 560 : 360, hMax * ratio);
+      const ry = M + (S ? 190 : 150);
+      T(g, v.headline, w / 2, M + (S ? 120 : 98), S ? 26 : 20, 600, { upper: true, em: 0.3, alpha: 0.9, align: "center" });
+      drawRoute(g, (w - rw) / 2, ry, rw, true);
+      if (!state.route) T(g, v.headline, w / 2, ry + 80, S ? 96 : 70, 700, { em: -0.045, align: "center" });
+      statsBlock(g, fmt, v, S ? 1345 : 1100);
+      footer(g, fmt);
     }
     return cv;
   }
@@ -696,7 +701,7 @@
 
   function drawMain() {
     const seq = ++renderSeq;
-    const out = render(state.preset, 1);
+    const out = render(state.style, state.fmt, 1);
     if (seq !== renderSeq) return;
     const main = $("ph-canvas");
     main.width = out.width;
@@ -708,10 +713,10 @@
   function drawThumbs() {
     $("ph-presets").querySelectorAll("canvas").forEach((cv) => {
       const id = cv.dataset.preset;
-      const p = PRESETS.find((x) => x.id === id);
-      const out = render(id, 0.17);
-      cv.width = Math.round(p.size.w * 0.1);
-      cv.height = Math.round(p.size.h * 0.1);
+      const f = FORMATS[state.fmt];
+      const out = render(id, state.fmt, 0.17);
+      cv.width = Math.round(f.w * 0.1);
+      cv.height = Math.round(f.h * 0.1);
       cv.getContext("2d").drawImage(out, 0, 0, cv.width, cv.height);
     });
   }
@@ -724,8 +729,8 @@
   }
 
   function buildPresetPicker() {
-    $("ph-presets").innerHTML = PRESETS.map(
-      (p) => `<button type="button" class="ph-preset${p.id === state.preset ? " is-active" : ""}" data-preset="${p.id}"><canvas data-preset="${p.id}"></canvas><span>${p.name}</span></button>`
+    $("ph-presets").innerHTML = STYLES.map(
+      (p) => `<button type="button" class="ph-preset${p.id === state.style ? " is-active" : ""}" data-preset="${p.id}"><canvas data-preset="${p.id}"></canvas><span>${p.name}</span></button>`
     ).join("");
   }
 
@@ -738,7 +743,7 @@
 
   async function fontsReady() {
     try {
-      await Promise.all([document.fonts.load("700 80px Oswald"), document.fonts.load("700 30px Montserrat"), document.fonts.load("600 30px Montserrat")]);
+      await Promise.all([200, 400, 500, 600, 700].map((wt) => document.fonts.load(`${wt} 40px Montserrat`)));
     } catch (e) {}
   }
 
@@ -755,17 +760,28 @@
     }
   }
 
+  let shotSeq = 0;
+
   function analyzeShot(target) {
     state.route = extractRoute(state.shot, target);
     $("ph-pick").hidden = !!state.route;
-    if (state.route) setStatus("ph-shot-status", "✓ Маршрут знайдено й вирізаний у контур");
-    else setStatus("ph-shot-status", "Не знайшов маршрут на скріншоті. Торкнись лінії маршруту нижче, і я виділю її за кольором.", true);
-    $("ph-crop").hidden = !(state.shot && state.preset === "card");
+    schedule();
+    return !!state.route;
+  }
+
+  function fillFromStats(stats) {
+    const set = (id, val) => {
+      if (val) $(id).value = val;
+    };
+    set("ph-km", stats.km ? String(stats.km).replace(".", ",") : "");
+    set("ph-time", stats.time);
+    set("ph-pace", stats.pace);
     schedule();
   }
 
   async function onShot(file) {
     if (!file) return;
+    const seq = ++shotSeq;
     setStatus("ph-shot-status", "Шукаю маршрут…");
     try {
       state.shot = await loadImage(file);
@@ -774,10 +790,24 @@
       pick.height = state.shot.height;
       pick.getContext("2d").drawImage(state.shot, 0, 0);
       await fontsReady();
-      // Даємо браузеру перемалювати стан, потім рахуємо (аналіз важкий)
-      setTimeout(() => analyzeShot(), 30);
     } catch (e) {
-      setStatus("ph-shot-status", "Не вдалося відкрити скріншот 😕", true);
+      return setStatus("ph-shot-status", "Не вдалося відкрити скріншот 😕", true);
+    }
+    await new Promise((r) => setTimeout(r, 30)); // даємо браузеру перемалювати стан: аналіз важкий
+    const hasRoute = analyzeShot();
+    if (!hasRoute) setStatus("ph-shot-status", "Маршрут не знайдено. Торкнись лінії маршруту нижче, і я виділю її за кольором. Цифри читаю…", true);
+    try {
+      const stats = await ocrShot(state.shot, (msg) => seq === shotSeq && setStatus("ph-shot-status", (hasRoute ? "✓ Маршрут знайдено. " : "") + msg));
+      if (seq !== shotSeq) return;
+      fillFromStats(stats);
+      const found = [stats.km && `${stats.km} км`, stats.time && stats.time, stats.pace && `${stats.pace} /км`].filter(Boolean);
+      const lost = ["км", "час", "темп"].filter((_, i) => ![stats.km, stats.time, stats.pace][i]);
+      let msg = hasRoute ? "✓ Маршрут знайдено. " : "";
+      msg += found.length ? `✓ Зчитано: ${found.join(" · ")}. Перевір цифри.` : "Цифри не вдалося зчитати: введи їх нижче.";
+      if (found.length && lost.length) msg += ` Не знайшов: ${lost.join(", ")}.`;
+      setStatus("ph-shot-status", msg, !found.length);
+    } catch (e) {
+      if (seq === shotSeq) setStatus("ph-shot-status", (hasRoute ? "✓ Маршрут знайдено. " : "") + "Не вдалося зчитати цифри (немає зв'язку?). Введи їх нижче.", true);
     }
   }
 
@@ -797,11 +827,12 @@
       gg += px[i * 4 + 1];
       bb += px[i * 4 + 2];
     }
-    analyzeShot([rr / 9, gg / 9, bb / 9]);
+    if (analyzeShot([rr / 9, gg / 9, bb / 9])) setStatus("ph-shot-status", "✓ Маршрут виділено за обраним кольором");
+    else setStatus("ph-shot-status", "Усе ще не знайшов лінію. Торкнись точно по маршруту.", true);
   });
 
   ["ph-km", "ph-time", "ph-pace", "ph-headline", "ph-sub"].forEach((id) => $(id).addEventListener("input", schedule));
-  [["ph-fx", "fx"], ["ph-fy", "fy"], ["ph-zoom", "zoom"], ["ph-ct", "cropTop"], ["ph-cb", "cropBottom"]].forEach(([id, key]) =>
+  [["ph-fx", "fx"], ["ph-fy", "fy"], ["ph-zoom", "zoom"]].forEach(([id, key]) =>
     $(id).addEventListener("input", (e) => {
       state[key] = Number(e.target.value);
       schedule();
@@ -811,14 +842,22 @@
   $("ph-presets").addEventListener("click", (e) => {
     const b = e.target.closest("[data-preset]");
     if (!b || b.tagName === "CANVAS") return;
-    state.preset = b.dataset.preset;
+    state.style = b.dataset.preset;
     $("ph-presets").querySelectorAll(".ph-preset").forEach((x) => x.classList.toggle("is-active", x === b));
-    $("ph-crop").hidden = !(state.shot && state.preset === "card");
     drawMain();
   });
 
+  $("ph-format").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-fmt]");
+    if (!b) return;
+    state.fmt = b.dataset.fmt;
+    $("ph-format").querySelectorAll("[data-fmt]").forEach((x) => x.classList.toggle("is-active", x === b));
+    drawMain();
+    drawThumbs();
+  });
+
   function toBlob() {
-    return new Promise((resolve) => $("ph-canvas").toBlob(resolve, "image/jpeg", 0.92));
+    return new Promise((resolve) => $("ph-canvas").toBlob(resolve, "image/jpeg", 0.93));
   }
 
   function event(name) {
@@ -867,16 +906,18 @@
   if (/; wv\)/.test(navigator.userAgent)) $("ph-wv").hidden = false;
 
   buildPresetPicker();
-  fontsReady().then(() => {
+  const redraw = () => fontsReady().then(() => {
     drawMain();
     drawThumbs();
   });
-
+  redraw();
+  logoWhite.addEventListener("load", redraw);
+  logoColor.addEventListener("load", redraw);
   document.querySelectorAll(".tabs__btn").forEach((b) =>
     b.addEventListener("click", () => {
-      if (b.dataset.tab === "photo") fontsReady().then(() => { drawMain(); drawThumbs(); });
+      if (b.dataset.tab === "photo") redraw();
     })
   );
 
-  window.RunPhoto = { render, extractRoute, state, autoPace };
+  window.RunPhoto = { render, extractRoute, parseStats, state, autoPace, ocrShot };
 })();
