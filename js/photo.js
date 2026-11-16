@@ -166,6 +166,30 @@
     const biggest = Math.max(0, ...sizes);
     if (biggest < 150) return null;
     const keep = sizes.map((s) => s >= Math.max(120, biggest * 0.12));
+    // Сторонні помаранчеві штрихи (риска, значок, підпис) далеко від головного маршруту відкидаємо:
+    // інакше вони розтягують область обрізання, і контур «з'їжджає» на фото. Лишаємо лише частини поруч із найбільшою.
+    const main = sizes.indexOf(biggest);
+    let bx0 = w, by0 = h, bx1 = 0, by1 = 0;
+    const box = sizes.map(() => [w, h, 0, 0]);
+    for (let i = 0; i < lab.length; i++) {
+      const l = lab[i];
+      if (!l) continue;
+      const x = i % w;
+      const y = (i / w) | 0;
+      const b = box[l];
+      if (x < b[0]) b[0] = x;
+      if (y < b[1]) b[1] = y;
+      if (x > b[2]) b[2] = x;
+      if (y > b[3]) b[3] = y;
+    }
+    [bx0, by0, bx1, by1] = box[main];
+    const gap = 0.18 * Math.max(bx1 - bx0, by1 - by0, 60);
+    for (let l = 1; l < sizes.length; l++) {
+      if (l === main || !keep[l]) continue;
+      const b = box[l];
+      const near = b[2] >= bx0 - gap && b[0] <= bx1 + gap && b[3] >= by0 - gap && b[1] <= by1 + gap;
+      if (!near) keep[l] = false;
+    }
     let x0 = w, y0 = h, x1 = 0, y1 = 0, count = 0;
     for (let i = 0; i < mask.length; i++) {
       if (lab[i] && !keep[lab[i]]) mask[i] = 0;
@@ -415,14 +439,25 @@
     g.restore();
   }
 
-  function drawRoute(g, x, y, w, shadow) {
+  // maxH — стеля висоти: контур не опускається нижче безпечної зони (щоб не заходив на людей).
+  // Якщо не вміщується, стискаємо його, лишаючи прив'язку до правого краю (x + w).
+  function drawRoute(g, x, y, w, shadow, maxH) {
     if (!state.route) return 0;
-    const h = w / state.route.ratio;
+    let h = w / state.route.ratio;
+    if (maxH && h > maxH) {
+      const nw = maxH * state.route.ratio;
+      x += w - nw;
+      w = nw;
+      h = maxH;
+    }
     g.save();
     if (shadow) {
-      g.shadowColor = "rgba(0,0,0,.35)";
-      g.shadowBlur = 8;
-      g.shadowOffsetY = 2;
+      // Темне гало, щоб помаранчева лінія читалась і на світлому тлі (стіна, небо)
+      g.shadowColor = "rgba(10,12,24,.75)";
+      g.shadowBlur = 10;
+      g.drawImage(state.route.thin, x, y, w, h);
+      g.shadowBlur = 4;
+      g.shadowOffsetY = 1;
     }
     g.drawImage(state.route.thin, x, y, w, h);
     g.restore();
@@ -634,7 +669,7 @@
       g.restore();
       logoMark(g, m + 28, m + 24, S ? 64 : 54);
       T(g, "#TitanClubRivne", w - m - 28, m + 36, S ? 19 : 16, 600, { ...CAP, align: "right" });
-      if (state.route) drawRoute(g, w - m - 28 - (S ? 200 : 150) + 6, m + (S ? 110 : 90), S ? 200 : 150, true);
+      if (state.route) drawRoute(g, w - m - 28 - (S ? 200 : 150) + 6, m + (S ? 110 : 90), S ? 200 : 150, true, S ? 300 : 200);
       const ink = GRAPHITE;
       const hair = "rgba(38,38,43,.28)";
       const y0 = h - panel + (S ? 40 : 30);
@@ -653,7 +688,7 @@
 
     if (styleId === "classic") {
       headline(g, fmt, v, M + (S ? 190 : 150));
-      drawRoute(g, w - M - (S ? 300 : 190) + 10, M + (S ? 150 : 112), S ? 300 : 190, true);
+      drawRoute(g, w - M - (S ? 300 : 190) + 10, M + (S ? 150 : 112), S ? 300 : 190, true, S ? 440 : 280);
       statsBlock(g, fmt, v, S ? 1345 : 1100);
       footer(g, fmt);
     } else if (styleId === "numbers") {
