@@ -28,7 +28,7 @@
     p = p || {};
     p.look = Object.assign({}, Avatar.DEFAULT_LOOK, p.look);
     p.stats = Object.assign(
-      { runs: 0, totalKm: 0, streak: 0, bestStreak: 0, lastDay: "", gameBest: 0, sunday: {}, trail: {}, bestRuns: [] },
+      { runs: 0, totalKm: 0, streak: 0, bestStreak: 0, lastDay: "", gameBest: 0, sunday: {}, trail: {}, bestRuns: [], lastPlayed: {} },
       p.stats
     );
     p.unlocked = p.unlocked || [];
@@ -103,6 +103,8 @@
     const s = state.stats;
     touchStreak();
     s.runs++;
+    s.lastPlayed = s.lastPlayed || {};
+    s.lastPlayed[run.mode] = Date.now(); // для ротації віджета «Сьогодні»
     const earned = [];
     if (run.mode === "draw") {
       // «Малюнок дня»: кілометрів немає, лише лічильник забігів і серія днів
@@ -474,7 +476,7 @@
       toast(kind === "head" ? "⚡ Розгін увімкнено на цей забіг!" : "⚡ Супер-кросівки взуто на цей забіг!");
       return true;
     } catch (e) {
-      toast("Не вдалося увімкнути буст 😕");
+      toast("Не вдалося увімкнути 😕");
       return false;
     }
   }

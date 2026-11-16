@@ -137,7 +137,7 @@
     if (WEBVIEW) {
       // Додаток відкриває admin.html у браузері телефона (це вже вшито в APK); звідти сторінка перекидає на гру
       box.innerHTML =
-        '<p class="muted small-left">Google не пускає вхід у додатку. Щоб увійти й мати однакові монети, рівні й бусти на всіх пристроях, відкрий гру в Chrome.</p>' +
+        '<p class="muted small-left">Google не пускає вхід у додатку. Щоб увійти й мати однакові монети, рівні й супер-кросівки на всіх пристроях, відкрий гру в Chrome.</p>' +
         '<a class="btn btn--primary btn--small" href="admin.html?open=game">Відкрити в Chrome</a>';
       return;
     }

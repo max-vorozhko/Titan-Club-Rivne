@@ -17,23 +17,26 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;400;500;600;700;800;900&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- ?v=N: збільшуйте при кожному релізі, щоб браузери не брали старі файли з кешу -->
-  <link rel="stylesheet" href="css/style.css?v=47">
+  <link rel="stylesheet" href="css/style.css?v=48">
 </head>
 <body class="is-home">
   <header class="topbar">
     <a href="./" class="topbar__home" id="home-link" aria-label="На головну">
       <img src="assets/logo.png" alt="Titan Club Rivne" class="topbar__logo">
     </a>
+    <!-- Перемикач режимів «Грати» (видно лише в режимах); решта розділів — нижня навігація -->
     <nav class="tabs" role="tablist">
       <button class="tabs__btn" data-tab="game" role="tab">Біг</button>
       <button class="tabs__btn" data-tab="sunday" role="tab">Неділя</button>
       <button class="tabs__btn" data-tab="trail" role="tab">Трейл</button>
       <button class="tabs__btn" data-tab="draw" role="tab">Малюнок</button>
-      <button class="tabs__btn" data-tab="photo" role="tab">Фото</button>
-      <button class="tabs__btn" data-tab="leaders" role="tab">Рейтинг</button>
-      <button class="tabs__btn" data-tab="club" role="tab">Клуб</button>
-      <button class="tabs__btn" data-tab="profile" role="tab">Профіль</button>
+      <button class="tabs__btn" data-tab="photo" role="tab" hidden>Фото</button>
+      <button class="tabs__btn" data-tab="leaders" role="tab" hidden>Рейтинг</button>
+      <button class="tabs__btn" data-tab="club" role="tab" hidden>Клуб</button>
+      <button class="tabs__btn" data-tab="profile" role="tab" hidden>Профіль</button>
     </nav>
+    <div class="topbar__title" id="topbar-title"></div>
+    <button class="coin-chip" id="topbar-coins" type="button" hidden aria-label="Монети">🪙 <b>0</b></button>
   </header>
 
   <main>
@@ -48,43 +51,31 @@
           <button class="btn btn--small" id="install-btn" type="button" hidden>Встановити</button>
           <button class="install__close" id="install-close" type="button" aria-label="Закрити">✕</button>
         </div>
-        <img src="assets/logo.png" alt="" class="home__logo">
-        <h1 class="home__title">TITAN <span>RUN</span></h1>
-        <p class="muted home__lead">Обери формат забігу</p>
-        <div class="home__cards">
-          <button class="home-card" data-go="game" type="button">
-            <span class="home-card__icon">🏃</span>
-            <span class="home-card__text"><b>Біг</b><small>Вулицями Рівного: скільки пробіжиш без зупинки</small></span>
-          </button>
-          <button class="home-card" data-go="sunday" type="button">
-            <span class="home-card__icon">☕</span>
-            <span class="home-card__text"><b>Неділя</b><small>5 або 10 км з групою клубу, рейтинг тижня</small></span>
-          </button>
-          <button class="home-card" data-go="trail" type="button">
-            <span class="home-card__icon">🏔️</span>
-            <span class="home-card__text"><b>Трейл</b><small>7, 13 або 26 км з рельєфом: підготовка до вертикалей</small></span>
-          </button>
-          <button class="home-card" data-go="draw" type="button">
-            <span class="home-card__icon">✏️</span>
-            <span class="home-card__text"><b>Малюнок</b><small>Малюнок дня: проведи бігуна по контуру зверху</small></span>
-          </button>
-          <button class="home-card home-card--photo" data-go="photo" type="button">
-            <span class="home-card__icon">📸</span>
-            <span class="home-card__text"><b>Фото з пробіжки</b><small>Пост для Instagram: фото, твій маршрут і цифри з Strava</small></span>
-          </button>
-          <button class="home-card home-card--club" data-go="club" type="button">
-            <span class="home-card__icon">📊</span>
-            <span class="home-card__text"><b>Клуб</b><small>Відвідуваність недільних пробіжок і кілометри клубу</small></span>
-          </button>
+        <div class="home__head">
+          <img src="assets/logo.png" alt="" class="home__mark">
+          <h1 class="home__name">TITAN <span>RUN</span></h1>
+          <button class="coin-chip" id="home-coins" type="button" hidden aria-label="Монети">🪙 <b>0</b></button>
         </div>
-        <div class="home__more">
-          <button class="btn btn--ghost" data-go="leaders" type="button">🏆 Турнірна таблиця</button>
-          <button class="btn btn--ghost" data-go="profile" type="button">👤 Профіль</button>
+        <div class="home__label"><span>Сьогодні</span><span class="home__day" id="today-day"></span></div>
+        <div class="today" id="today"></div>
+        <div class="home__label"><span>Усі режими</span></div>
+        <div class="mode-grid">
+          <button class="mode-tile" data-go="game" type="button"><span class="mode-tile__ic">🏃</span><b>Біг</b><small>Скільки пробіжиш без зупинки</small></button>
+          <button class="mode-tile" data-go="sunday" type="button"><span class="mode-tile__ic">☕</span><b>Неділя</b><small>5 або 10 км з групою клубу</small></button>
+          <button class="mode-tile" data-go="trail" type="button"><span class="mode-tile__ic">🏔️</span><b>Трейл</b><small>7, 13 або 26 км з рельєфом</small></button>
+          <button class="mode-tile" data-go="draw" type="button"><span class="mode-tile__ic">✏️</span><b>Малюнок</b><small>Проведи бігуна по контуру</small><span class="tag">новий щодня</span></button>
+        </div>
+        <div class="home__label"><span>Клуб</span></div>
+        <div class="home-rows">
+          <button class="home-row" data-go="leaders" type="button"><span class="home-row__ic">🏆</span><b>Рейтинг</b><i>›</i></button>
+          <button class="home-row" data-go="club" type="button"><span class="home-row__ic">👥</span><b>Клуб: неділі й кілометри</b><i>›</i></button>
+          <button class="home-row" data-go="photo" type="button"><span class="home-row__ic">📸</span><b>Фото з пробіжки</b><span class="tag">нове</span><i>›</i></button>
         </div>
         <div class="home__links">
           <a href="https://www.instagram.com/titan.club.rivne" target="_blank" rel="noopener">📷 Наш Instagram: <b>@titan.club.rivne</b></a>
           <a href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">👨‍💻 Instagram розробника: <b>@max_vorozhko</b></a>
         </div>
+        <p class="home__credit">Powered by Max Vorozhko</p>
       </div>
     </section>
 
@@ -524,7 +515,7 @@
         <div class="ptabs" id="profile-tabs" role="tablist">
           <button class="ptabs__btn is-active" data-pane="look" type="button"><span>👕</span>Вигляд</button>
           <button class="ptabs__btn" data-pane="goals" type="button"><span>🏅</span>Ачівки й задачі</button>
-          <button class="ptabs__btn" data-pane="boost" type="button"><span>⚡</span>Буст-кросівки</button>
+          <button class="ptabs__btn" data-pane="boost" type="button"><span>🪙</span>Гаманець</button>
           <button class="ptabs__btn" data-pane="train" type="button"><span>🏋️</span>Тренування</button>
         </div>
 
@@ -555,14 +546,14 @@
           </div>
           <div class="boost-card">
             <h3 class="boost-card__title">💛 За донат 30 грн</h3>
-            <p>Промокод на вибір: <b>⚡ буст</b> на один забіг у будь-якому режимі («Біг» — розгін, «Неділя» й «Трейл» — золоті кросівки, ≈ −3 с/км) або <b>🪙 120 монет</b>.</p>
-            <p class="boost-card__count">⚡ Бусти: <b id="profile-boosts">0</b> шт.</p>
+            <p>Промокод на вибір: <b>👟 супер-кросівки</b> на один забіг («Неділя» й «Трейл»: ≈ −3 с/км; у «Бігу» працюють як розгін) або <b>🪙 120 монет</b>.</p>
+            <p class="boost-card__count">👟 Супер-кросівки: <b id="profile-boosts">0</b> шт.</p>
             <a class="btn btn--primary btn--wide" id="profile-donate" target="_blank" rel="noopener" hidden>Задонатити 30 грн на банку</a>
             <p class="muted small-left" id="profile-donate-hint"></p>
             <form class="lb-form lb-form--col" id="profile-code-form">
               <input class="lb-form__input" id="profile-code" maxlength="40" placeholder="Промокод" autocomplete="off" autocapitalize="characters" required>
               <div class="boost-card__rewards">
-                <button class="btn btn--small" type="submit" data-reward="boost">⚡ Взяти буст</button>
+                <button class="btn btn--small" type="submit" data-reward="boost">👟 Взяти кросівки</button>
                 <button class="btn btn--small" type="submit" data-reward="coins">🪙 Взяти 120 монет</button>
               </div>
             </form>
@@ -593,7 +584,7 @@
         <li>🪙 титан-монети — для рекорду</li>
         <li>Шлагбауми (з 4 км) — лише подвійним стрибком</li>
         <li>🪙 монети з забігів копляться на рахунку (новачкам 50 у подарунок)</li>
-        <li>⚡ <b>Розгін</b> — один забіг стартує зі швидкістю 3-го км, а кілометри рахуються з нуля; результат у таблиці з ⚡. Купується за 100 🪙 (до 5 на добу); промокод дає буст або 120 🪙</li>
+        <li>⚡ <b>Розгін</b> — один забіг стартує зі швидкістю 3-го км, а кілометри рахуються з нуля; результат у таблиці з ⚡. Купується за 100 🪙 (до 5 на добу); промокод дає супер-кросівки або 120 🪙</li>
       </ul>
       <button class="btn btn--primary" data-close type="button">Зрозуміло</button>
     </div>
@@ -640,34 +631,37 @@
     </div>
   </div>
 
-  <footer class="footer">
-    <a href="https://www.instagram.com/titan.club.rivne" target="_blank" rel="noopener">@titan.club.rivne</a>
-    <span class="footer__sep">·</span>
-    <a class="footer__credit" href="https://www.instagram.com/max_vorozhko" target="_blank" rel="noopener">Powered by Max Vorozhko</a>
-  </footer>
+  <nav class="bnav" id="bnav" aria-label="Основна навігація">
+    <button class="bnav__btn is-active" data-nav="play" type="button"><i>🏃</i>Грати</button>
+    <button class="bnav__btn" data-nav="leaders" type="button"><i>🏆</i>Рейтинг</button>
+    <button class="bnav__btn" data-nav="club" type="button"><i>👥</i>Клуб</button>
+    <button class="bnav__btn" data-nav="photo" type="button"><i>📸</i>Фото</button>
+    <button class="bnav__btn" data-nav="profile" type="button"><i>👤</i>Профіль</button>
+  </nav>
 
-  <script src="js/config.js?v=47"></script>
-  <script src="js/kyiv.js?v=47"></script>
-  <script src="js/analytics.js?v=47"></script>
-  <script src="js/errors.js?v=47"></script>
-  <script src="js/leaderboard.js?v=47"></script>
-  <script src="js/share.js?v=47"></script>
-  <script src="js/avatar.js?v=47"></script>
-  <script src="js/profile.js?v=47"></script>
-  <script src="js/rewards.js?v=47"></script>
-  <script src="js/game.js?v=47"></script>
-  <script src="js/app.js?v=47"></script>
-  <script src="js/sunday.js?v=47"></script>
-  <script src="js/sunday-ui.js?v=47"></script>
-  <script src="js/trail.js?v=47"></script>
-  <script src="js/trail-ui.js?v=47"></script>
-  <script src="js/draw.js?v=47"></script>
-  <script src="js/profile-ui.js?v=47"></script>
-  <script src="js/account.js?v=47"></script>
-  <script src="js/yearkm.js?v=47"></script>
-  <script src="js/photo.js?v=47"></script>
-  <script src="js/club.js?v=47"></script>
-  <script src="js/club-ui.js?v=47"></script>
-  <script src="js/pwa.js?v=47"></script>
+  <script src="js/config.js?v=48"></script>
+  <script src="js/kyiv.js?v=48"></script>
+  <script src="js/analytics.js?v=48"></script>
+  <script src="js/errors.js?v=48"></script>
+  <script src="js/leaderboard.js?v=48"></script>
+  <script src="js/share.js?v=48"></script>
+  <script src="js/avatar.js?v=48"></script>
+  <script src="js/profile.js?v=48"></script>
+  <script src="js/rewards.js?v=48"></script>
+  <script src="js/game.js?v=48"></script>
+  <script src="js/app.js?v=48"></script>
+  <script src="js/sunday.js?v=48"></script>
+  <script src="js/sunday-ui.js?v=48"></script>
+  <script src="js/trail.js?v=48"></script>
+  <script src="js/trail-ui.js?v=48"></script>
+  <script src="js/draw.js?v=48"></script>
+  <script src="js/profile-ui.js?v=48"></script>
+  <script src="js/account.js?v=48"></script>
+  <script src="js/yearkm.js?v=48"></script>
+  <script src="js/photo.js?v=48"></script>
+  <script src="js/club.js?v=48"></script>
+  <script src="js/club-ui.js?v=48"></script>
+  <script src="js/pwa.js?v=48"></script>
+  <script src="js/today.js?v=48"></script>
 </body>
 </html>

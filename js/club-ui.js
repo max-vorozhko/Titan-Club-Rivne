@@ -192,7 +192,7 @@
       : "Відвідуваність недільних пробіжок Titan Club Rivne. Щоб зберегти приватність, імена замінені на вигаданих персонажів.";
     const s = Club.stats(pub);
     if (!s.held) {
-      $("club-body").innerHTML = '<p class="leaders__empty">Скоро тут з\'явиться статистика недільних пробіжок клубу 🏃</p>';
+      $("club-body").innerHTML = EmptyState.html("🏃", "Ще немає відмічених неділь", "Після першої недільної пробіжки тут з'явиться статистика клубу.");
       return;
     }
     // Нагороди, графік і карта — за поточний (останній) рік програми
@@ -247,7 +247,7 @@
   async function load() {
     if (loading) return;
     if (!Leaderboard.enabled) {
-      $("club-body").innerHTML = '<p class="leaders__empty">Статистика клубу поки недоступна</p>';
+      $("club-body").innerHTML = EmptyState.html("📡", "Статистика недоступна", "Потрібен інтернет. Перевір з'єднання й спробуй ще раз.", "club");
       return;
     }
     loading = true;
@@ -267,7 +267,7 @@
       }
       render(snap.exists ? snap.data() : null, names, meId);
     } catch (e) {
-      $("club-body").innerHTML = '<p class="leaders__empty">Не вдалося завантажити статистику 😕</p>';
+      $("club-body").innerHTML = EmptyState.html("😕", "Не вдалося завантажити", "Перевір з'єднання й спробуй ще раз.", "club");
     } finally {
       loading = false;
     }
