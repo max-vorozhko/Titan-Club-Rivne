@@ -22,8 +22,20 @@
     document.querySelectorAll(".tabs__btn").forEach((b) => b.classList.toggle("is-active", b.dataset.tab === name));
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("is-active", t.id === "tab-" + name));
     document.body.classList.toggle("is-home", name === "home");
+    document.body.classList.toggle("in-mode", ["game", "sunday", "trail", "draw"].includes(name));
+    document.body.dataset.tab = name;
     window.scrollTo(0, 0);
+    document.dispatchEvent(new CustomEvent("titan:tab", { detail: name }));
   }
+
+  // Порожній стан із поясненням і кнопкою «Спробувати ще раз» (retry — що перезавантажити)
+  window.EmptyState = {
+    html(icon, title, text, retry) {
+      return `<div class="empty-state"><div class="empty-state__ic">${icon}</div><b>${title}</b><p>${text}</p>${
+        retry ? `<button class="btn btn--small" data-retry="${retry}" type="button">Спробувати ще раз</button>` : ""
+      }</div>`;
+    },
+  };
 
   document.querySelectorAll(".tabs__btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -46,7 +58,12 @@
   document.addEventListener("click", (e) => {
     const go = e.target.closest("[data-go]");
     if (go) goTab(go.dataset.go);
-    // Плашка про буст на старті «Неділі»/«Трейлу» веде у вкладку «Буст-кросівки» профілю
+    const retry = e.target.closest("[data-retry]");
+    if (retry) {
+      if (retry.dataset.retry === "leaders") loadLeaders();
+      else if (retry.dataset.retry === "club" && window.ClubUI) ClubUI.load();
+    }
+    // Плашка про супер-кросівки на старті «Неділі»/«Трейлу» веде у «Гаманець» профілю
     if (e.target.closest("[data-goto-boost]")) {
       goTab("profile");
       if (window.ProfileUI) ProfileUI.showPane("boost");
@@ -229,7 +246,7 @@
       trainingToasted = true;
       ui.toast("🏋️ Тренування завершено! Забери рівень у профілі");
     }
-    // Реклама розгону лише там, де в гравця немає розгонів і бустів
+    // Реклама розгону лише там, де в гравця немає розгонів і супер-кросівок
     $("game-promo").hidden = !Leaderboard.enabled || hasHeads();
   }
 
@@ -473,8 +490,7 @@
       draw: "Малюнок маршрутом · найкращі бали за весь час. При рівних балах вище швидший.",
     }[lbMode];
     if (!Leaderboard.enabled) {
-      $("lb-wip").hidden = false;
-      $("lb-list").innerHTML = empty("Скоро тут з'явиться рейтинг учасників клубу.");
+      $("lb-list").innerHTML = `<li class="leaders__empty">${EmptyState.html("📡", "Рейтинг недоступний", "Потрібен інтернет. Перевір з'єднання й спробуй ще раз.", "leaders")}</li>`;
       return;
     }
     const seq = ++lbSeq;
@@ -513,7 +529,7 @@
         if (lbMode === "sunday") loadPastWeek(d, seq);
       }
     } catch (e) {
-      if (seq === lbSeq) $("lb-list").innerHTML = empty("Не вдалося завантажити рейтинг 😕");
+      if (seq === lbSeq) $("lb-list").innerHTML = `<li class="leaders__empty">${EmptyState.html("😕", "Не вдалося завантажити рейтинг", "Перевір з'єднання й спробуй ще раз.", "leaders")}</li>`;
     }
   }
 

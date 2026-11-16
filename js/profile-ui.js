@@ -163,7 +163,7 @@
       await Profile.redeem(input.value, reward);
       input.value = "";
       renderBoosts();
-      Profile.toast(reward === "coins" ? `🪙 Промокод активовано: +${Profile.PROMO_COINS} монет!` : "⚡ Промокод активовано: +1 буст!");
+      Profile.toast(reward === "coins" ? `🪙 Промокод активовано: +${Profile.PROMO_COINS} монет!` : "👟 Промокод активовано: +1 супер-кросівки!");
     } catch (err) {
       Profile.toast("Промокод недійсний або вже використаний 😕");
     }
@@ -265,7 +265,7 @@
     renderTraining();
   });
 
-  // Розділи профілю: Вигляд / Ачівки й задачі / Буст-кросівки — щоб не гортати донизу
+  // Розділи профілю: Вигляд / Ачівки й задачі / Гаманець / Тренування — щоб не гортати донизу
   function showPane(name) {
     document.querySelectorAll("#profile-tabs .ptabs__btn").forEach((b) => b.classList.toggle("is-active", b.dataset.pane === name));
     ["look", "goals", "boost", "train"].forEach((p) => ($("pane-" + p).hidden = p !== name));
