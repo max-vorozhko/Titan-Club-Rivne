@@ -673,7 +673,7 @@ body:not(.in-mode):not(.is-home) .topbar__title { display: block; }
 .today__dots { display: flex; gap: 4px; margin-top: 6px; }
 .today__dots i { width: 14px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.25); }
 .today__dots i.on { background: var(--brand); }
-.today__bar { height: 8px; border-radius: 99px; background: rgba(255,255,255,.22); overflow: hidden; }
+.today__bar { display: block; margin-top: 8px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.22); overflow: hidden; }
 .today__bar i { display: block; height: 100%; background: var(--brand); border-radius: 99px; }
 .today__tile.is-ready { outline: 2px solid var(--brand); }
 
