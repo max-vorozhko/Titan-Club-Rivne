@@ -407,7 +407,18 @@
             <button type="button" class="is-active" data-fmt="post">Пост <small>4:5</small></button>
             <button type="button" data-fmt="story">Сторіс <small>9:16</small></button>
           </div>
+          <div class="ph-format" id="ph-mode">
+            <button type="button" class="is-active" data-mode="normal">Звичайне фото</button>
+            <button type="button" data-mode="event">Житомирські вертикалі</button>
+          </div>
           <div class="ph-presets" id="ph-presets"></div>
+          <div id="ph-event" hidden>
+            <p class="muted small-left">Обери трасу, її профіль висот піде на фото. Км, час і темп беру зі скріншота, вони можуть відрізнятись від траси.</p>
+            <div class="ph-format" id="ph-course"></div>
+            <div class="ph-fields ph-fields--wide">
+              <label>Твій набір висоти, м (необов'язково)<input class="lb-form__input" id="ph-elev" inputmode="numeric" placeholder="за трасою" autocomplete="off"></label>
+            </div>
+          </div>
         </div>
 
         <div class="ph-preview">

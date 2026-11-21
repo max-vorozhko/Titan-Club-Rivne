@@ -607,6 +607,7 @@ body.is-home .topbar { display: none; }
 .ph-format button { flex: 1; border: 0; background: none; padding: 10px 8px; border-radius: 999px; font: 700 15px var(--font-display); text-transform: uppercase; letter-spacing: 1px; color: var(--ink); cursor: pointer; }
 .ph-format button small { font-family: var(--font); font-weight: 600; opacity: .7; letter-spacing: 0; }
 .ph-format button.is-active { background: var(--brand); color: #fff; }
+.ph-format button:disabled { opacity: .45; cursor: default; }
 .ph-format button.is-active small { color: #fff; opacity: .9; }
 .ph-fields .lb-form__input::placeholder { color: #b4b4bb; font-weight: 500; }
 

@@ -17,7 +17,7 @@
     { id: "frame", name: "Рамка" },
   ];
 
-  const state = { photo: null, shot: null, route: null, style: "classic", fmt: "post", fx: 50, fy: 20, zoom: 100 };
+  const state = { photo: null, shot: null, route: null, style: "classic", mode: "normal", course: "13", fmt: "post", fx: 50, fy: 20, zoom: 100 };
 
   const logoWhite = new Image();
   logoWhite.src = "assets/logo-white.png";
@@ -475,6 +475,8 @@
       time: time || "—",
       timeUnit: timeUnit(time),
       pace: pace || "—",
+      elev: fix($("ph-elev").value).replace(/[^\d]/g, "") || String((COURSES[state.course] || COURSES["13"]).gain),
+      course: state.course,
       headline: fix($("ph-headline").value) || "Ми пробігли",
       sub: fix($("ph-sub").value),
     };
@@ -640,6 +642,51 @@
     if (v.sub) T(g, v.sub, M, ty + (S ? 290 : 208), S ? 22 : 17, 600, { upper: true, em: 0.3, alpha: 0.85 });
   }
 
+
+  // ---------- Трейл «Житомирські вертикалі» ----------
+
+  // Профілі офіційних трас «Житомирських вертикалей» (висота, м; рівномірно по дистанції).
+  // Знято з Garmin-профілю траси. Реальна дистанція й набір у бігуна можуть відрізнятись:
+  // км, час і темп беруться зі скріншота бігуна, а профіль показує саму трасу.
+  const COURSES = {
+    "7": { km: 6.99, gain: 144, prof: [189, 187, 191, 194, 191, 187, 182, 180, 181, 182, 186, 192, 197, 203, 211, 213, 214, 212, 211, 208, 203, 199, 194, 190, 186, 181, 180, 181, 182, 185, 189, 193, 196, 199, 201, 202, 203, 204, 204, 205, 207, 208, 210, 212, 213, 214, 214, 214, 213, 212, 211, 210, 208, 206, 204, 204, 204, 204, 204, 203, 202, 198, 196, 192, 189, 186, 187, 190, 195, 201, 207, 213, 219, 224, 227, 228, 228, 228, 226, 224, 223, 219, 216, 211, 204, 198, 192, 190, 188, 187, 186, 186, 187, 188, 189, 191, 195, 197, 200, 203, 204, 203, 200, 198, 196, 196, 199, 202, 205, 206, 207, 207, 206, 203, 197, 191, 188, 186, 185, 185] },
+    "13": { km: 13.48, gain: 265, prof: [188, 190, 192, 186, 181, 185, 195, 209, 214, 213, 209, 199, 189, 180, 180, 185, 193, 198, 202, 203, 204, 207, 211, 213, 214, 214, 211, 208, 205, 204, 204, 202, 196, 190, 185, 192, 206, 217, 226, 226, 221, 215, 206, 195, 191, 197, 205, 209, 210, 207, 205, 204, 206, 210, 214, 220, 224, 227, 229, 230, 230, 229, 227, 225, 220, 218, 212, 200, 190, 187, 185, 186, 189, 194, 201, 211, 219, 221, 221, 216, 210, 201, 195, 193, 193, 193, 199, 203, 204, 201, 195, 190, 188, 196, 203, 208, 207, 204, 202, 205, 208, 211, 213, 216, 218, 222, 225, 227, 225, 217, 207, 199, 196, 201, 204, 204, 200, 191, 186, 186] },
+    "26": { km: 25.41, gain: 341, prof: [187, 191, 184, 193, 211, 210, 198, 182, 187, 197, 203, 208, 213, 214, 211, 206, 202, 194, 189, 206, 223, 223, 212, 196, 199, 206, 206, 207, 213, 220, 225, 224, 218, 208, 200, 192, 192, 197, 200, 206, 214, 217, 214, 211, 212, 216, 219, 220, 218, 216, 214, 209, 201, 196, 198, 202, 207, 207, 202, 204, 212, 219, 221, 223, 226, 229, 230, 230, 228, 225, 222, 217, 217, 222, 228, 235, 236, 234, 227, 221, 216, 213, 212, 211, 213, 220, 227, 230, 230, 227, 220, 209, 190, 186, 190, 201, 218, 220, 213, 199, 194, 195, 203, 201, 191, 196, 206, 206, 204, 209, 215, 219, 226, 224, 211, 199, 204, 203, 190, 186] },
+  };
+
+  const COURSE_LIST = ["7", "13", "26"]; // кнопка вмикається, якщо профіль є в COURSES
+
+  function elevationProfile(course) {
+    const pts = (COURSES[course] || COURSES["13"]).prof;
+    const mn = Math.min(...pts);
+    const mx = Math.max(...pts);
+    return pts.map((v) => (v - mn) / (mx - mn));
+  }
+
+  function drawElevation(g, x, y, w, h, prof, S) {
+    const px = (i) => x + (i / (prof.length - 1)) * w;
+    const py = (v) => y + h - v * h * 0.92;
+    g.save();
+    g.beginPath();
+    g.moveTo(x, y + h);
+    prof.forEach((v, i) => g.lineTo(px(i), py(v)));
+    g.lineTo(x + w, y + h);
+    g.closePath();
+    g.fillStyle = linear(g, 0, y, 0, y + h, [[0, "rgba(248,90,10,.55)"], [1, "rgba(248,90,10,0)"]]);
+    g.fill();
+    g.beginPath();
+    prof.forEach((v, i) => (i ? g.lineTo(px(i), py(v)) : g.moveTo(px(i), py(v))));
+    g.lineJoin = "round";
+    g.lineWidth = S ? 5 : 4;
+    g.strokeStyle = "#fff";
+    g.shadowColor = "rgba(0,0,0,.45)";
+    g.shadowBlur = 8;
+    g.stroke();
+    g.restore();
+    const top = prof.indexOf(Math.max(...prof));
+    return { x: px(top), y: py(prof[top]) };
+  }
+
   function render(styleId, fmt, scale) {
     const { w, h } = FORMATS[fmt];
     const cv = document.createElement("canvas");
@@ -724,6 +771,35 @@
       if (!state.route) T(g, v.headline, w / 2, ry + 80, S ? 96 : 70, 700, { em: -0.045, align: "center" });
       statsBlock(g, fmt, v, S ? 1345 : 1100);
       footer(g, fmt);
+    } else if (styleId === "vertical") {
+      // Трейл «Житомирські вертикалі»: назва події + профіль набору висоти + цифри
+      const v2 = v;
+      const tsz = S ? 112 : 84;
+      const ty = M + (S ? 190 : 150);
+      g.fillStyle = ORANGE;
+      g.fillRect(M, ty + 8, S ? 34 : 26, 3);
+      T(g, "Трейл · 2026", M + (S ? 48 : 40), ty, S ? 19 : 15, 600, { upper: true, em: 0.3, alpha: 0.9, shadow: 10 });
+      T(g, "Житомирські", M, ty + (S ? 40 : 32), tsz, 700, { lh: 0.98, em: -0.045, shadow: 20 });
+      const vw = T(g, "вертикалі", M, ty + (S ? 40 : 32) + tsz * 0.98, tsz, 700, { lh: 0.98, em: -0.045, shadow: 20 });
+      T(g, ".", M + vw - tsz * 0.045, ty + (S ? 40 : 32) + tsz * 0.98, tsz, 700, { lh: 0.98, color: ORANGE });
+      T(g, v2.sub || v2.headline, M, ty + (S ? 40 : 32) + tsz * 1.96 + 14, S ? 22 : 17, 600, { upper: true, em: 0.3, alpha: 0.88, shadow: 10 });
+      const ph = S ? 170 : 120; // профіль низько, у темній зоні, щоб не закривати людей на фото
+      const py0 = (S ? 1345 : 1100) - ph - (S ? 40 : 34);
+      const prof = elevationProfile(v2.course);
+      const peak = drawElevation(g, M, py0, w - 2 * M, ph, prof, S);
+      g.beginPath();
+      g.arc(peak.x, peak.y, S ? 11 : 9, 0, Math.PI * 2);
+      g.fillStyle = ORANGE;
+      g.fill();
+      g.lineWidth = 3;
+      g.strokeStyle = "#fff";
+      g.stroke();
+      if (v2.elev) {
+        const lx = Math.min(Math.max(peak.x, M + 120), w - M - 120);
+        T(g, "↑ +" + v2.elev + " м", lx, peak.y - (S ? 62 : 50), S ? 32 : 25, 600, { align: "center", shadow: 12 });
+      }
+      statsBlock(g, fmt, v, S ? 1345 : 1100);
+      footer(g, fmt);
     }
     return cv;
   }
@@ -734,9 +810,11 @@
   let thumbTimer;
   let renderSeq = 0;
 
+  const curStyle = () => (state.mode === "event" ? "vertical" : state.style);
+
   function drawMain() {
     const seq = ++renderSeq;
-    const out = render(state.style, state.fmt, 1);
+    const out = render(curStyle(), state.fmt, 1);
     if (seq !== renderSeq) return;
     const main = $("ph-canvas");
     main.width = out.width;
@@ -866,7 +944,7 @@
     else setStatus("ph-shot-status", "Усе ще не знайшов лінію. Торкнись точно по маршруту.", true);
   });
 
-  ["ph-km", "ph-time", "ph-pace", "ph-headline", "ph-sub"].forEach((id) => $(id).addEventListener("input", schedule));
+  ["ph-km", "ph-time", "ph-pace", "ph-headline", "ph-sub", "ph-elev"].forEach((id) => $(id).addEventListener("input", schedule));
   [["ph-fx", "fx"], ["ph-fy", "fy"], ["ph-zoom", "zoom"]].forEach(([id, key]) =>
     $(id).addEventListener("input", (e) => {
       state[key] = Number(e.target.value);
@@ -879,6 +957,31 @@
     if (!b || b.tagName === "CANVAS") return;
     state.style = b.dataset.preset;
     $("ph-presets").querySelectorAll(".ph-preset").forEach((x) => x.classList.toggle("is-active", x === b));
+    drawMain();
+  });
+
+  function buildCoursePicker() {
+    $("ph-course").innerHTML = COURSE_LIST.map((id) => {
+      const ok = !!COURSES[id];
+      return `<button type="button" data-course="${id}"${ok ? "" : " disabled"} class="${id === state.course ? "is-active" : ""}">${id} км${ok ? "" : " <small>скоро</small>"}</button>`;
+    }).join("");
+  }
+
+  $("ph-course").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-course]");
+    if (!b || b.disabled) return;
+    state.course = b.dataset.course;
+    $("ph-course").querySelectorAll("[data-course]").forEach((x) => x.classList.toggle("is-active", x === b));
+    drawMain();
+  });
+
+  $("ph-mode").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-mode]");
+    if (!b) return;
+    state.mode = b.dataset.mode;
+    $("ph-mode").querySelectorAll("[data-mode]").forEach((x) => x.classList.toggle("is-active", x === b));
+    $("ph-presets").hidden = state.mode === "event";
+    $("ph-event").hidden = state.mode !== "event";
     drawMain();
   });
 
@@ -941,6 +1044,7 @@
   if (/; wv\)/.test(navigator.userAgent)) $("ph-wv").hidden = false;
 
   buildPresetPicker();
+  buildCoursePicker();
   const redraw = () => fontsReady().then(() => {
     drawMain();
     drawThumbs();
