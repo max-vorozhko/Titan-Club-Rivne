@@ -783,6 +783,8 @@
       const vw = T(g, "вертикалі", M, ty + (S ? 40 : 32) + tsz * 0.98, tsz, 700, { lh: 0.98, em: -0.045, shadow: 20 });
       T(g, ".", M + vw - tsz * 0.045, ty + (S ? 40 : 32) + tsz * 0.98, tsz, 700, { lh: 0.98, color: ORANGE });
       T(g, v2.sub || v2.headline, M, ty + (S ? 40 : 32) + tsz * 1.96 + 14, S ? 22 : 17, 600, { upper: true, em: 0.3, alpha: 0.88, shadow: 10 });
+      // Контур маршруту зі скріншота: справа від назви, де вільне небо
+      if (state.route) drawRoute(g, S ? w - M - 250 : w - M - 290, S ? ty + 300 : ty - 40, S ? 250 : 290, true, S ? 360 : 360);
       const ph = S ? 170 : 120; // профіль низько, у темній зоні, щоб не закривати людей на фото
       const py0 = (S ? 1345 : 1100) - ph - (S ? 40 : 34);
       const prof = elevationProfile(v2.course);
